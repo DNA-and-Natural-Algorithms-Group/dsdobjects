@@ -608,6 +608,7 @@ class DSD_Complex(object):
         self._structure = structure
         self._canonical_form = None
         self._rotations = None
+        self._strand_lengths = None
 
         # Initialized on demand:
         self._pair_table = None
@@ -620,17 +621,21 @@ class DSD_Complex(object):
 
         # rotate strands into a canonical form.
         # two complexes are equal if they have equal canonial form
-        if memorycheck :
-            if self.canonical_form in DSD_Complex.MEMORY:
-                other = DSD_Complex.MEMORY[self._canonical_form]
-                error = DSDDuplicationError('Duplicate Complex specification:', 
-                        self._canonical_form)
-                error.existing = other
-                error.rotations = self._rotations - other._rotations
-                raise error
-            else :
-                DSD_Complex.MEMORY[self.canonical_form] = self
-                DSD_Complex.NAMES[self._name] = self.canonical_form
+        self._memorycheck = memorycheck
+        DSD_Complex.MEMORY[self.canonical_form] = self
+        DSD_Complex.NAMES[self._name] = self.canonical_form
+
+    def do_memorycheck(self, current = None, rotations=None):
+        if current is None: 
+            current = self.canonical_form 
+
+        if current in DSD_Complex.MEMORY:
+            other = DSD_Complex.MEMORY[current]
+            error = DSDDuplicationError('Duplicate Complex specification:', 
+                    current)
+            error.existing = other
+            error.rotations = abs(rotations - self.size) - other._rotations
+            raise error
 
     @property
     def name(self):
@@ -677,14 +682,31 @@ class DSD_Complex(object):
                 canon = tuple((string(self.sequence), string(self.structure)))
                 if canon not in all_variants:
                     all_variants[canon] = e
+                    if self._memorycheck:
+                        self.do_memorycheck(canon, e)
             self._canonical_form = sorted(list(all_variants.keys()), key = lambda x:(x[0],x[1]))[0]
             # Invert rotations to be compatible with 'wrap'
-            self._rotations = abs(all_variants[self._canonical_form] - len(self.strands))
+            self._rotations = abs(all_variants[self._canonical_form] - self.size)
         return self._canonical_form
 
+    @property
+    def size(self):
+        if not self._strand_lengths :
+            if not self._lol_sequence:
+                self._lol_sequence = utils.make_lol_sequence(self._sequence)
+            self._strand_lengths = map(len, self._lol_sequence)
+        return len(self._strand_lengths)
+            
+    def strand_length(self, pos):
+        if not self._strand_lengths :
+            if not self._lol_sequence:
+                self._lol_sequence = utils.make_lol_sequence(self._sequence)
+            self._strand_lengths = map(len, self._lol_sequence)
+        return self._strand_lengths[pos]
+ 
     def rotate(self):
         """Generator function yields every rotation of the complex. """
-        for i in range(len(self.lol_sequence)):
+        for i in range(self.size):
             yield self.rotate_once()
 
     def rotate_once(self):
@@ -721,6 +743,7 @@ class DSD_Complex(object):
             self._structure = self._structure[p + 1:] + ["+"] + self._structure[:p]
         self._pair_table = None
         self._loop_index = None
+        self._lol_sequence = None
         self._exterior_domains = None
         return self
 
@@ -740,8 +763,8 @@ class DSD_Complex(object):
             return (x % m + m) % m
 
         if n is None:
-            n = len(self.strands)
-        return (wrap(loc[0] + n, len(self.strands)), loc[1])
+            n = self.size
+        return (wrap(loc[0] + n, self.size), loc[1])
 
     @property
     def kernel_string(self):
@@ -822,7 +845,7 @@ class DSD_Complex(object):
     def get_paired_loc(self, loc):
         if not self._pair_table:
             self._pair_table = utils.make_pair_table(self.structure)
-        return self.pair_table[loc[0]][loc[1]]
+        return self._pair_table[loc[0]][loc[1]]
 
     @property
     def exterior_domains(self):

@@ -7,9 +7,10 @@
 # Parser module for pil files in kernel notation.
 #
 
-from pyparsing import (Word, Literal, Group, Suppress, Optional, ZeroOrMore, Combine, White,
-                       OneOrMore, alphas, alphanums, nums, delimitedList, StringStart, StringEnd, Forward,
-                       LineEnd, pythonStyleComment, ParseElementEnhance)
+from pyparsing import (Word, Literal, Group, Suppress, Optional, ZeroOrMore,
+        Combine, White, OneOrMore, alphas, alphanums, nums, delimitedList,
+        StringStart, StringEnd, Forward, LineEnd, pythonStyleComment,
+        ParseElementEnhance)
 
 
 def pil_kernel_setup():
