@@ -1,0 +1,214 @@
+
+class DSDUtilityError(Exception):
+    """
+    dnaobjects.basic error class.
+    """
+
+    def __init__(self, message, *kargs):
+        if kargs:
+            self.message = "{} [{}]".format(message, ', '.join(map(str,kargs)))
+        else :
+            self.message = message
+        super(DSDUtilityError, self).__init__(self.message)
+
+def make_pair_table(ss, strand_break='+', ignore=set('.')):
+    """Return a secondary struture in form of pair table:
+
+    Args:
+      ss (str or list): secondary structure in dot-bracket format.
+      cut (str, optional): character that defines a cut-point. Defaults to '+'.
+      ignore (set, optional): a list of characters that are ignored. Defaults to ['.']
+
+    Example:
+                             0,0  0,1  0,2   0,3   0,4     1,0   1,1
+             "...((+))" -> [[None,None,None,(1,0),(1,1)],[(0,4),(0,3)]]
+
+    Raises:
+       DSDUtilityError: Too many closing parenthesis ')' in secondary structure.
+       DSDUtilityError: Too many opening parenthesis '(' in secondary structure.
+       DSDUtilityError: Unexpected character in sequence: "{}".
+
+    Returns:
+      [list]: A pair-table as list of lists.
+    """
+
+    assert len(strand_break) == 1
+    assert '.' in ignore
+
+    # Return value
+    pair_table = []
+
+    # Helpers
+    stack = []
+    strand_index = 0
+    domain_index = 0
+
+    strand = []
+    pair_table.append(strand)
+    for char in ss:
+        if char == strand_break :
+            strand_index += 1
+            domain_index = 0
+            strand = []
+            pair_table.append(strand)
+            continue
+
+        if char == '(' :
+            strand.append(None)
+            stack.append((strand_index, domain_index))
+            domain_index += 1
+ 
+        elif char == ")" :
+            try:
+                loc = stack.pop()
+            except IndexError as e:
+                raise DSDUtilityError("Too few closing parenthesis ')' in secondary structure.")
+            strand.append(loc)
+            pair_table[loc[0]][loc[1]] = (strand_index, domain_index)
+            domain_index += 1
+
+        elif char in set(ignore): # unpaired
+            strand.append(None)
+            domain_index += 1
+
+        else :
+            raise DSDUtilityError("Unexpected character in sequence: '{}'.".format(char))
+
+    if len(stack) > 0 :
+        raise DSDUtilityError("Too few opening parenthesis '(' in secondary structure.")
+
+    return pair_table 
+
+def pair_table_to_dot_bracket(pt, strand_break='+'):
+    """
+    """
+    assert len(strand_break) == 1
+    out = []
+    for si, strand in enumerate(pt):
+        for di, pair in enumerate(strand):
+            if pair is None:
+                out.append('.')
+            else :
+                locus = (si, di)
+                if locus < pair :
+                    out.append('(')
+                else :
+                    out.append(')')
+        out.append(strand_break)
+    
+    return out[:-1] #remove last '+'
+
+def make_lol_sequence(seq):
+    indices = [-1] + [i for i, x in enumerate(seq) if x == "+"]
+    indices.append(len(seq))
+    return [seq[indices[i - 1] + 1 : indices[i]] for i in range(1, len(indices))]
+
+def make_loop_index(ptable):
+    """
+    number loops and assign each position its loop-number
+    handy for checking which pairs can be added
+    """
+    loop_index = []
+    exterior = set()
+
+    stack = []
+    (cl, nl) = (0, 0)
+
+    for si, strand in enumerate(ptable):
+        loop = []
+        loop_index.append(loop)
+        for di, pair in enumerate(strand):
+            loc = (si, di)
+            if pair is None:
+                pass
+            elif loc < pair : # '('
+                nl += 1
+                cl = nl
+                stack.append(loc)
+            loop.append(cl)
+            if pair and pair < loc : # ')'
+                _ = stack.pop()
+                try :
+                    ploc = stack[-1]
+                    cl = loop_index[ploc[0]][ploc[1]]
+                except IndexError:
+                    cl = 0
+        # strand break
+        if cl in exterior :
+            raise DSDUtilityError('Complexes not connected.')
+        else :
+            exterior.add(cl)
+    # ptable end
+    return loop_index, exterior
+
+def split_complex(lol_seq, ptable):
+    """
+    number loops and assign each position its loop-number
+    handy for checking which pairs can be added
+
+    NOTE: modifies its arguments!
+    """
+    loop_index = []
+    exterior = set()
+
+    complexes = dict()
+    splice = []
+
+    stack = []
+    (cl, nl) = (0, 0)
+
+    # Identify exterior loops using the loop index function,
+    # rewrite ptable to contain characters instead of paired locus.
+    for si, strand in enumerate(ptable):
+        loop = []
+        loop_index.append(loop)
+        for di, pair in enumerate(strand):
+            loc = (si, di)
+            if pair is None:
+                ptable[si][di] = '.'
+            elif loc < pair : # '('
+                nl += 1
+                cl = nl
+                stack.append(loc)
+                ptable[si][di] = '('
+            loop.append(cl)
+            if pair and pair < loc : # ')'
+                _ = stack.pop()
+                try :
+                    ploc = stack[-1]
+                    cl = loop_index[ploc[0]][ploc[1]]
+                except IndexError:
+                    cl = 0
+                ptable[si][di] = ')'
+
+        # store the strand_index where a given loop-cut starts
+        if cl in complexes :
+            start = complexes[cl]
+            end = si
+            splice.append((start,end))
+            complexes[cl] = si
+        else :
+            complexes[cl] = si
+    # for ptable end
+
+    parts = []
+    for (s,e) in splice:
+        new_seq = lol_seq[s+1:e+1]
+        new_pt = ptable[s+1:e+1]
+
+        lol_seq[s+1:e+1] = [[] for x in range(s+1,e+1)]
+        ptable[s+1:e+1] = [[] for x in range(s+1,e+1)]
+
+        # change format from lol to regular list format
+        new_seq=reduce(lambda a,b:a+['+']+b, new_seq)
+        new_pt=reduce(lambda a,b:a+['+']+b, new_pt)
+        parts.append((new_seq, new_pt))
+
+    # append the remainder (or original) sequence
+    new_seq = lol_seq[:]
+    new_pt = ptable[:]
+    new_seq=reduce(lambda a,b:a+['+']+b if b else a+b,new_seq)
+    new_pt=reduce(lambda a,b:a+['+']+b if b else a+b,new_pt)
+    parts.append((new_seq, new_pt))
+    return parts
+
