@@ -8,24 +8,14 @@
 #
 
 from pyparsing import (Word, Literal, Group, Suppress, Optional, ZeroOrMore,
-        Combine, White, OneOrMore, alphas, alphanums, nums, delimitedList,
-        StringStart, StringEnd, Forward, LineEnd, pythonStyleComment,
-        ParseElementEnhance)
+        Combine, White, OneOrMore, alphas, alphanums, nums, StringStart,
+        StringEnd, Forward, LineEnd, pythonStyleComment, ParseElementEnhance)
 
 
 def pil_kernel_setup():
     crn_DWC = "".join(
         [x for x in ParseElementEnhance.DEFAULT_WHITE_CHARS if x != "\n"])
     ParseElementEnhance.setDefaultWhitespaceChars(crn_DWC)
-
-    # letter = (* any alphanumeric character *)
-    # identifier = letter, {letter}, [*]
-    # pattern = expression, {space, expression}
-    # expression = domain | loop | wildcard | break
-    # domain = identifier
-    # loop = identifier, "(", [pattern] ,")"
-    # wildcard = "?" | "_" | "~" (* ... etc.*)
-    # break = "+"
 
     def T(x, tag):
         def TPA(tag):
@@ -39,39 +29,25 @@ def pil_kernel_setup():
     C = Combine
     L = Literal
 
-    # NOTE: Exchange comment to forbid/allow names starting with digits
-    #identifier = W(alphanums + "_-")
-    identifier = W(alphas, alphanums + "_-")
+    identifier = W(alphas, alphanums + "_-") # forbid names starting with digits
     number = W(nums, nums)
-    gorf = C(W(nums) + O((L('.') + W(nums)) | (L('e') + O('-') + W(nums))))
+    gorf = C(W(nums) + O((L('.') + W(nums)) | (L('e') + O('-') + W(nums)))) # {:g} {:f}
     domain = G(T(S("length") + identifier + S("=") + number +
                  OneOrMore(LineEnd().suppress()), 'domain'))
 
-    # NOTE: exchange the comment for asense if you want to allow input in form of "x( ... y)",
-    # but also double-check if that really works...
+    # NOTE: exchange the comment for asense if you want to allow input in form
+    # of "x( ... y)", but also double-check if that really works...
     sense = Combine(identifier + O(L("^")) + O(L("*")))
-    #asense = (Combine(sense + S(")")) | S(")"))
-    asense = S(")")
-
     sbreak = L("+")
 
     pattern = Forward()
-    # NOTE: Remove S(White()) for backward compatiblility: )) is not allowed anymore.
-    #loop = (Combine(sense + S("(")) + O(pattern) + asense)
     innerloop = S(White()) + pattern + S(White()) | G(S(White()))
-    loop = (Combine(sense + S("(")) + innerloop + asense)
+    loop = (Combine(sense + S("(")) + innerloop + S(")"))
     pattern << G(OneOrMore(loop | sbreak | sense))
 
     unit = L('M') | L('mM') | L('uM') | L('nM') | L('pM')
-    conc = G(
-        S('@') +
-        L('initial') +
-        gorf +
-        unit) | G(
-        S('@') +
-        L('constant') +
-        gorf +
-        unit)
+    conc = G( S('@') + L('initial') + gorf + unit) \
+         | G( S('@') + L('constant') + gorf + unit)
 
     cplx = G(T(identifier + S("=") + OneOrMore(pattern) +
                O(conc) + OneOrMore(LineEnd().suppress()), 'complex'))
@@ -93,3 +69,4 @@ def parse_kernel_file(data):
 def parse_kernel_string(data):
     document = pil_kernel_setup()
     return document.parseString(data).asList()
+
