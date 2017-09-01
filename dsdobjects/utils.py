@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+#
+# dsdobjects.utils
+#   - copy and/or modify together with tests/test_utils.py
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
+# Distributed under the MIT License, use at your own risk.
+#
 
 class DSDUtilityError(Exception):
     """

@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
+#
+# tests for dsdobjects.base_classes
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
 
-import os
-import sys
 import unittest
 import dsdobjects.utils as utils
 

@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+#
+# dsdobjects
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
+# Distributed under the MIT License, use at your own risk.
+#
 
 __version__='0.1.0'
 

@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 #
 # dsdobjects.base_classes
-#
-# copy and/or modify together with tests/test_base_classes.py
+#   - copy and/or modify together with tests/test_base_classes.py
 #
 # Written by Stefan Badelt (badelt@caltech.edu)
 #
-#  This file contains adapted code from the "DNAObjects" Python package coded
-#  by Joseph Berleant and Joseph Schaeffer, the "Peppercornenumerator" Python 
-#  packate coded by Casey Grun, Kathrik Sarma, Erik Winfree and Brian Wolfe and 
-#  the "Nuskell" DNA strand displacement compiler coded by Seung Woo Shin.
+#  Contributions:
+#  This file contains adapted code from various related Python packages
+#  coded in the "DNA and Natural Algorithms Group", Caltech:
+#   * "DNAObjecs" coded by Joseph Berleant and Joseph Schaeffer 
+#   * "Peppercornenumerator" coded by Kathrik Sarma, Casey Grun and Erik Winfree
+#   * "Nuskell" coded by Seung Woo Shin
 #
 # Distributed under the MIT License, use at your own risk.
 #
 
-# Get Python 3 compatibility
+# Python 3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import dsdobjects.utils as utils
@@ -1030,9 +1031,6 @@ class DSD_RestingState(object):
     def __repr__(self):
         return "RestingState(\"%s\", %s)" % (self.name, str(self.complexes))
 
-    #def __hash__(self):
-    #    return hash(tuple(self.complexes))
-
 class DSD_Reaction(object):
     """ A reaction pathway.
 
@@ -1174,5 +1172,4 @@ class DSD_Reaction(object):
 
     def __hash__(self):
         return hash(self.canonical_form)
-        #return hash(self.rtype) + hash(frozenset(self.reactants)) + hash(frozenset(self.products))
 

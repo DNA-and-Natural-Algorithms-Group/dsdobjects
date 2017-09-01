@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
 #
+# dsdobjects.parser.pil_extended_format
+#   - copy and/or modify together with tests/test_pil_parser.py
 #
-# Copyright (c) 2017 Caltech. All rights reserved.
-# Written by Stefan Badelt (badelt@caltech.edu).
+# Written by Stefan Badelt (badelt@caltech.edu)
 #
-#
-# Parser module for pil files.
+# Distributed under the MIT License, use at your own risk.
 #
 
 from pyparsing import (Word, Literal, Group, Suppress, Optional, ZeroOrMore,

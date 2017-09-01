@@ -1,8 +1,13 @@
+# -*- coding: utf-8 -*-
+#
+# tests for dsdobjects.base_classes
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
 
 import unittest
 
 import dsdobjects.base_classes as bc
-import dsdobjects.utils as utils
 
 SKIP = False
 
