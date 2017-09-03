@@ -299,7 +299,7 @@ class DSD_ComplexObjectTest(unittest.TestCase):
         self.assertEqual(foo.name, 'bar')
         self.assertSetEqual(set(bc.DSD_Complex.NAMES.keys()), set(['bar', 'cplx1']))
 
-        with self.assertRaises(bc.DSDDuplicationError):
+        with self.assertRaises(bc.DSDObjectsError):
             bar.name = 'bar'
 
     def test_rotations(self):

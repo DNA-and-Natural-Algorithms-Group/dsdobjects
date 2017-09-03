@@ -34,7 +34,10 @@ class DSDObjectsError(Exception):
 
 class DSDDuplicationError(Exception):
     """
-    dnaobjects.base_classes duplication error class.
+    dnaobjects.base_classes duplication error class. 
+    
+    Unique class to return an existing equivalent object from memory, which may
+    be used directly by child classes, instead of initializing a new object.
     """
     def __init__(self, message, *kargs):
         if kargs:
@@ -362,7 +365,7 @@ class DL_Domain(ABC_Domain):
 
     Raises:
         DSDDuplicationError: "Duplicate DL_Domain specification."
-        DSDDuplicationError: "Conflictiong assignments of dtype and length."
+        DSDObjectsError: "Conflictiong assignments of dtype and length."
         DSDObjectsError: "DL_Domain instance requires dtype and/or length"
 
     Class Variables:
@@ -595,8 +598,7 @@ class DSD_Complex(object):
             DSD_Complex.ID += 1
 
         if self._name in DSD_Complex.NAMES:
-            error = DSDDuplicationError('Duplicate DSD_Complex name!', self._name)
-            error.existing = DSD_Complex.MEMORY[DSD_Complex.NAMES[self._name]]
+            error = DSDObjectsError('Duplicate DSD_Complex name!', self._name)
             raise error
 
         if len(sequence) != len(structure):
@@ -646,9 +648,7 @@ class DSD_Complex(object):
     @name.setter
     def name(self, name):
         if name in DSD_Complex.NAMES:
-            error = DSDDuplicationError('Duplicate DSD_Complex name!', name)
-            error.existing = DSD_Complex.MEMORY[DSD_Complex.NAMES[name]]
-            raise error
+            raise DSDObjectsError('Duplicate DSD_Complex name!', name)
         if self._name in DSD_Complex.NAMES:
             del DSD_Complex.NAMES[self._name]
         self._name = name
@@ -955,14 +955,7 @@ class DSD_RestingState(object):
         if name:
             self._name = name
         else:
-            if prefix and (prefix[0].isdigit() or prefix[-1].isdigit()):
-                raise DSDObjectsError('RestingState prefix must not start or end with a digit!')
             self._name = prefix + self._canonical.name
-
-        if self._name in DSD_RestingState.NAMES:
-            error = DSDDuplicationError('Duplicate RestingState name!', self._name)
-            error.existing = DSD_RestingState.MEMORY[DSD_RestingState.NAMES[self._name]]
-            raise error
 
         # two complexes are equal if they have equal canonial form
         if memorycheck :
@@ -974,10 +967,13 @@ class DSD_RestingState(object):
                     error = DSDDuplicationError('Duplicate Complex specification:', self, other)
                     error.existing = other
                     raise error
+            elif self._name in DSD_RestingState.NAMES:
+                raise DSDObjectsError('Duplicate RestingState name!', self._name)
             else :
                 for canon in map(lambda x: x.canonical_form, self._complexes):
                     DSD_RestingState.MEMORY[canon] = self
                 DSD_RestingState.NAMES[self._name] = self.canonical_form
+
 
     @property
     def name(self):
@@ -1114,14 +1110,6 @@ class DSD_Reaction(object):
     def kernel_string(self):
         return "{} -> {}".format("  +  ".join(r.kernel_string for r in self.reactants),
                 "  +  ".join(p.kernel_string for p in self.products))
-
-    @property
-    def full_string(self):
-        """prints the formal chemical reaction."""
-        #return '[{:15g} {:5s}] {:14s} {} -> {}'.format(self.rate, self.rateunits, self.rtype,
-        #    " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
-        return '{:14s} [ {:12g} {:4s} ] {} -> {}'.format(self.rtype, self.rate, self.rateunits,
-                " + ".join(map(str, self.reactants)), " + ".join(map(str, self.products)))
 
     @property
     def sorted(self):
