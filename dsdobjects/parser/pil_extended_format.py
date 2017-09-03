@@ -38,7 +38,6 @@ def pil_extended_setup():
     num_sci = C(number + O(L('.') + number) + L('e') + O(L('-') | L('+')) + W(nums))
     gorf = num_sci | num_flt
 
-    #gorf = C(W(nums) + O((L('.') + W(nums)) | (L('e') + O(L('-')) + W(nums))))
     domain = C(identifier + O('*'))
     constraint = W(alphas)
     assign = L("=") | L(":")
@@ -73,6 +72,7 @@ def pil_extended_setup():
     reaction = G(T(S("kinetic") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction')) \
              | G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
 
+    restingstate = G(T(S("state") + identifier + S("=") + S('[') + G(delimitedList(identifier)) + S(']') + OneOrMore(LineEnd().suppress()), 'resting-state'))
 
     # kernel notation
     sense = Combine(identifier + O(L("^")) + O(L("*")))
@@ -83,9 +83,14 @@ def pil_extended_setup():
     loop = (Combine(sense + S("(")) + innerloop + S(")"))
     pattern << G(OneOrMore(loop | L("+") | sense))
 
-    cplx = G(T(identifier + S("=") + OneOrMore(pattern) + OneOrMore(LineEnd().suppress()), 'kernel-complex'))
+    unit = L('M') | L('mM') | L('uM') | L('nM') | L('pM')
+    conc = G( S('@') + L('initial') + gorf + unit) \
+         | G( S('@') + L('constant') + gorf + unit)
 
-    stmt = sl_domain | dl_domain | comp_domain | strand | strandcomplex | reaction | cplx
+    cplx = G(T(identifier + S("=") + OneOrMore(pattern) + O(conc) +
+        OneOrMore(LineEnd().suppress()), 'kernel-complex'))
+
+    stmt = sl_domain | dl_domain | comp_domain | strand | strandcomplex | reaction | cplx | restingstate
 
     document = StringStart() + ZeroOrMore(LineEnd().suppress()) + \
         OneOrMore(stmt) + StringEnd()

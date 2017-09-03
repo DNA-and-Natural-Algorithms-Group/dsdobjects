@@ -29,6 +29,9 @@ class TestPILparser(unittest.TestCase):
         with self.assertRaises(ParseException):
             parse_pil_string(""" strand = CT1 : 6""")
 
+        with self.assertRaises(ParseException):
+            parse_pil_string(" state e4 = e4")
+
     def test_not_implemented(self):
         # there is currently no support of additional arguments
         # for complexes, e.g. this: [1nt]
@@ -55,9 +58,12 @@ class TestPILparser(unittest.TestCase):
         parse_pil_string(" kinetic 4 + C1 -> 7             ")
         parse_pil_string(" kinetic [   876687.69 /M/s] I3 + SP -> C2 + Cat ")
         parse_pil_string(" kinetic [   1667015.4 /M/s] I3 + C1 -> W + Cat + OP ")
+        parse_pil_string(" state e4 = [e4]")
+        parse_pil_string(" state e4 = [e4, e5]")
         parse_pil_string(" reaction [branch-3way =  0.733333 /s   ] e71 -> e11 ")
         parse_pil_string(" reaction [bind21      =   4.5e+06 /M/s ] e4 + G1bot -> e13")
         parse_pil_string(" complex IABC : I A B C (((( + ))))((((. + ))))((((. + ))))..... ")
+        parse_pil_string(" e10 = 2( 3 + 3( 4( + ) ) ) 1*( + ) 2  @ initial 0 nM")
         parse_pil_string(" fuel2 = 2b( 3a( 3b( 3c( 3d( 4a( 4b 4c + ) ) ) ) ) ) 2a*         ")
         parse_pil_string(" fuel2 = 2b( 3a( 3b( 3c( 3d( 4a( 4b 4c + )))))) 2a*              ")
         parse_pil_string(" fuel2 = 2b(3a( 3b( 3c( 3d( 4a( 4b 4c + )))))) 2a*               ")
@@ -67,23 +73,6 @@ class TestPILparser(unittest.TestCase):
             I A B C 
             (((( + ))))((((. + ))))((((. + ))))..... 
             """)
-
-        # Outputs:
-        # [['dl-domain', 'a', '6']]
-        # [['sl-domain', 'a1', 'CTAGA', '6']]
-        # [['sl-domain', 'a1', 'CTAGA']]
-        # [['sl-domain', '1', 'CTA', '6']]
-
-        # [['composite-domain', 'q', ['a', 'b-seq', 'z'], '20']]
-        # [['composite-domain', 'q', ['a', 'b-seq', 'z'], '20']]
-        # [['composite-domain', 'q', ['a', 'b-seq', 'z']]]
-        # [['composite-domain', 'I', ['y*', 'b*', 'x*', 'a*']]]
-
-        # [['strand-complex', 'AB', ['A', 'B'], '.(((+)))   ']]
-        # [['strand-complex', 'AB', ['A', 'B'], '.(((+))) ']]
-        # [['strand-complex', 'I', ['I'], '....              ']]
-        # [['strand-complex', 'IABC', ['I', 'A', 'B', 'C'], '(((( + ))))((((. + ))))((((. + ))))..... ']]
-        # [['strand-complex', 'IABC', ['I', 'A', 'B', 'C'], '(((( + ))))((((. + ))))((((. + ))))..... ']]
 
 if __name__ == '__main__':
     unittest.main()

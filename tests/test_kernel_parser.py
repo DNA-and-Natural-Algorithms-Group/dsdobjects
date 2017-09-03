@@ -43,6 +43,19 @@ class TestKERNELparser(unittest.TestCase):
         parse_kernel_string(" reaction [branch-3way =  0.733333 /s   ] e71 -> e11 ")
         parse_kernel_string(" reaction [bind21      =   4.5e+06 /M/s ] e4 + G1bot -> e13")
 
+    def test_restingstate_examples(self):
+        with self.assertRaises(ParseException):
+            parse_kernel_string(" state e4 = e4")
+        parse_kernel_string(" state e4 = [e4]")
+        parse_kernel_string(" state e4 = [e4, e5]")
+
+    def test_complex_concentrations(self):
+        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ constant 1e-7 M")
+        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ constant 1e-4 mM")
+        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ constant 0.1 uM")
+        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ initial 100 nM")
+        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ initial 1e5 pM")
+
     def test_parse_examples(self):
         example1 = """
         length t0 = 6
@@ -77,11 +90,6 @@ class TestKERNELparser(unittest.TestCase):
         self.assertEqual(parse_kernel_string("cplx = a( b( c( + ) ) d ) "),
                          [['complex', 'cplx', ['a', ['b', ['c', ['+']], 'd']]]])
 
-        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ constant 1e-7 M")
-        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ constant 1e-4 mM")
-        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ constant 0.1 uM")
-        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ initial 100 nM")
-        parse_kernel_string("cplx = a( b( c( + ) ) d ) @ initial 1e5 pM")
 
         with self.assertRaises(ParseException):
             # whitespace between domains
