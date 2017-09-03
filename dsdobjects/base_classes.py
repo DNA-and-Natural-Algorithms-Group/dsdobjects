@@ -1067,11 +1067,6 @@ class DSD_Reaction(object):
                 DSD_Reaction.MEMORY[self.canonical_form] = self
 
     @property
-    def name(self):
-        """str: name of the reaction. """
-        return self._name
-
-    @property
     def rate(self):
         """flt: reaction rate. """
         return self._rate
