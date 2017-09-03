@@ -55,6 +55,8 @@ class TestPILparser(unittest.TestCase):
         parse_pil_string(" kinetic 4 + C1 -> 7             ")
         parse_pil_string(" kinetic [   876687.69 /M/s] I3 + SP -> C2 + Cat ")
         parse_pil_string(" kinetic [   1667015.4 /M/s] I3 + C1 -> W + Cat + OP ")
+        parse_pil_string(" reaction [branch-3way =  0.733333 /s   ] e71 -> e11 ")
+        parse_pil_string(" reaction [bind21      =   4.5e+06 /M/s ] e4 + G1bot -> e13")
         parse_pil_string(" complex IABC : I A B C (((( + ))))((((. + ))))((((. + ))))..... ")
         parse_pil_string(" fuel2 = 2b( 3a( 3b( 3c( 3d( 4a( 4b 4c + ) ) ) ) ) ) 2a*         ")
         parse_pil_string(" fuel2 = 2b( 3a( 3b( 3c( 3d( 4a( 4b 4c + )))))) 2a*              ")

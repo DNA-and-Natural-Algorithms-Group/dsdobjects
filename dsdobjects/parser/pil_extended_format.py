@@ -33,7 +33,12 @@ def pil_extended_setup():
 
     identifier = W(alphanums + "_-")
     number = W(nums, nums)
-    gorf = C(W(nums) + O((L('.') + W(nums)) | (L('e') + O('-') + W(nums))))
+
+    num_flt = C(number + O(L('.') + number))
+    num_sci = C(number + O(L('.') + number) + L('e') + O(L('-') | L('+')) + W(nums))
+    gorf = num_sci | num_flt
+
+    #gorf = C(W(nums) + O((L('.') + W(nums)) | (L('e') + O(L('-')) + W(nums))))
     domain = C(identifier + O('*'))
     constraint = W(alphas)
     assign = L("=") | L(":")
@@ -63,9 +68,10 @@ def pil_extended_setup():
 
     species = delimitedList(identifier, '+')
     units = W("/M/s")
-    ratebox = S('[') + gorf + S(units) + S(']')
+    infobox = S('[') + G(O(identifier + S(assign))) + G(gorf) + S(units) + S(']')
 
-    reaction = G(T(S("kinetic") + G(O(ratebox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
+    reaction = G(T(S("kinetic") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction')) \
+             | G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
 
 
     # kernel notation

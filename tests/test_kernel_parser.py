@@ -37,6 +37,12 @@ class TestKERNELparser(unittest.TestCase):
         with self.assertRaises(ParseException):
             parse_kernel_string("cplx = a( b( c() ) )")
 
+    def test_reaction_examples(self):
+        with self.assertRaises(ParseException):
+            parse_kernel_string(" kinetic [   1667015.4 /M/s] I3 + C1 -> W + Cat + OP ")
+        parse_kernel_string(" reaction [branch-3way =  0.733333 /s   ] e71 -> e11 ")
+        parse_kernel_string(" reaction [bind21      =   4.5e+06 /M/s ] e4 + G1bot -> e13")
+
     def test_parse_examples(self):
         example1 = """
         length t0 = 6

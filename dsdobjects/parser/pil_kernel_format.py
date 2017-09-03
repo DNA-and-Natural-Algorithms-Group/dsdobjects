@@ -9,8 +9,9 @@
 #
 
 from pyparsing import (Word, Literal, Group, Suppress, Optional, ZeroOrMore,
-        Combine, White, OneOrMore, alphas, alphanums, nums, StringStart,
-        StringEnd, Forward, LineEnd, pythonStyleComment, ParseElementEnhance)
+        Combine, White, OneOrMore, alphas, alphanums, nums, delimitedList,
+        StringStart, StringEnd, Forward, LineEnd, pythonStyleComment,
+        ParseElementEnhance)
 
 
 def pil_kernel_setup():
@@ -32,7 +33,11 @@ def pil_kernel_setup():
 
     identifier = W(alphas, alphanums + "_-") # forbid names starting with digits
     number = W(nums, nums)
-    gorf = C(W(nums) + O((L('.') + W(nums)) | (L('e') + O('-') + W(nums)))) # {:g} {:f}
+
+    num_flt = C(number + O(L('.') + number))
+    num_sci = C(number + O(L('.') + number) + L('e') + O(L('-') | L('+')) + W(nums))
+    gorf = num_sci | num_flt
+
     domain = G(T(S("length") + identifier + S("=") + number +
                  OneOrMore(LineEnd().suppress()), 'domain'))
 
@@ -53,7 +58,13 @@ def pil_kernel_setup():
     cplx = G(T(identifier + S("=") + OneOrMore(pattern) +
                O(conc) + OneOrMore(LineEnd().suppress()), 'complex'))
 
-    stmt = domain | cplx
+
+    species = delimitedList(identifier, '+')
+    units = W("/M/s")
+    infobox = S('[') + G(O(identifier + S('='))) + G(gorf) + S(units) + S(']')
+    reaction = G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
+
+    stmt = domain | cplx | reaction
 
     document = StringStart() + ZeroOrMore(LineEnd().suppress()) + \
         OneOrMore(stmt) + StringEnd()
