@@ -78,16 +78,15 @@ def pil_extended_setup():
     sense = Combine(identifier + O(L("^")) + O(L("*")))
 
     pattern = Forward()
-    # NOTE: Remove S(White()) for backward compatiblility: )) is not allowed anymore.
-    innerloop = pattern | G(S(White()))
-    loop = (Combine(sense + S("(")) + innerloop + S(")"))
-    pattern << G(OneOrMore(loop | L("+") | sense))
+    innerloop = pattern | S(White())
+    loop = (Combine(sense + S("(")) + G(O(innerloop)) + S(")"))
+    pattern << OneOrMore(loop | L("+") | sense)
 
     unit = L('M') | L('mM') | L('uM') | L('nM') | L('pM')
     conc = G( S('@') + L('initial') + gorf + unit) \
          | G( S('@') + L('constant') + gorf + unit)
 
-    cplx = G(T(identifier + S("=") + OneOrMore(pattern) + O(conc) +
+    cplx = G(T(identifier + S("=") + OneOrMore(G(pattern)) + O(conc) +
         OneOrMore(LineEnd().suppress()), 'kernel-complex'))
 
     stmt = sl_domain | dl_domain | comp_domain | strand | strandcomplex | reaction | cplx | restingstate
