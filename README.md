@@ -1,6 +1,6 @@
 # dsdobjects - base classes for DSD design
 
-This module provides minimal standardized Python parent classes for 
+This module provides standardized Python parent classes for 
 domain-level strand displacement programming:
 
   - SequenceConstraint
