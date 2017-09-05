@@ -384,7 +384,8 @@ class DL_Domain(ABC_Domain):
     MEMORY = dict()
 
     def __init__(self, name, dtype=None, length=None):
-        assert dtype in set(['short', 'long', None])
+        if dtype not in set(['short', 'long', None]):
+            raise DSDObjectsError('Cannot interpret dtype:', dtype)
         if length: assert isinstance(length, int)
 
         # Basic memory alerts.

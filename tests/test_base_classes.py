@@ -83,7 +83,7 @@ class DL_Domain_Test(unittest.TestCase):
         self.assertDictEqual(bc.DL_Domain.MEMORY, dict())
         with self.assertRaises(bc.DSDObjectsError):
             foo = bc.DL_Domain('foo')
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(bc.DSDObjectsError):
             foo = bc.DL_Domain('foo', dtype = 'blubb')
         with self.assertRaises(bc.DSDObjectsError):
             foo = bc.DL_Domain('foo', dtype = 'long', length = 5)
