@@ -1,8 +1,7 @@
 # dsdobjects - base classes for DSD design
 
-Programming domain-level strand displacement (DSD) systems can require
-different notions of "domains", "complexes", "reaction networks", etc. This
-module provides minimal standardized Python parent classes:
+This module provides minimal standardized Python parent classes for 
+domain-level strand displacement programming:
 
   - SequenceConstraint
   - DL_Domain
@@ -10,7 +9,6 @@ module provides minimal standardized Python parent classes:
   - DSD_Complex
   - DSD_Reaction
   - DSD_RestingSet
-  - DSD_TestTube
 
 These base classes are currently used in the projects [nuskell] and
 [peppercornenumerator]. An example for extending a base class is shown below:
