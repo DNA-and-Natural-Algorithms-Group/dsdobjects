@@ -598,10 +598,6 @@ class DSD_Complex(object):
             self._name = prefix + str(DSD_Complex.ID)
             DSD_Complex.ID += 1
 
-        if self._name in DSD_Complex.NAMES:
-            error = DSDObjectsError('Duplicate DSD_Complex name!', self._name)
-            raise error
-
         if len(sequence) != len(structure):
             raise DSDObjectsError(
                 "DSD_Complex() sequence and structure must have same length")
@@ -626,8 +622,9 @@ class DSD_Complex(object):
         # rotate strands into a canonical form.
         # two complexes are equal if they have equal canonial form
         self._memorycheck = memorycheck
-        DSD_Complex.MEMORY[self.canonical_form] = self
-        DSD_Complex.NAMES[self._name] = self.canonical_form
+        if self._memorycheck:
+            DSD_Complex.MEMORY[self.canonical_form] = self
+            DSD_Complex.NAMES[self._name] = self.canonical_form
 
     def do_memorycheck(self, current = None, rotations=None):
         if current is None: 
@@ -675,13 +672,10 @@ class DSD_Complex(object):
 
         Sets a variable self._rotations.
         """
-        def string(s):
-            return '_'.join(map(str,s))
-
         if not self._canonical_form:
             all_variants = dict()
             for e, new in enumerate(self.rotate(), 1):
-                canon = tuple((string(self.sequence), string(self.structure)))
+                canon = tuple((tuple(map(str,self.sequence)), tuple(self.structure)))
                 if canon not in all_variants:
                     all_variants[canon] = e
                     if self._memorycheck:
@@ -787,6 +781,7 @@ class DSD_Complex(object):
 
     @property
     def domains(self):
+        """ Returns a list of domains (sorted/unique) """
         if not self._domains:
             try :
                 self._domains = set(self.sequence)
@@ -798,16 +793,7 @@ class DSD_Complex(object):
 
     @property
     def strands(self):
-        if not self._strands:
-            self._strands = []
-            if not self._lol_sequence:
-                self._lol_sequence = utils.make_lol_sequence(self._sequence)
-                for strand in self._lol_sequence:
-                    try:
-                        self._strands.append('_'.join(map(lambda d: d.name, strand)))
-                    except:
-                        self._strands.append('_'.join(map(str, strand)))
-        return self._strands
+        raise NotImplementedError
 
     # Move set
     @property
@@ -931,6 +917,9 @@ class DSD_Complex(object):
         # ambiguos... length of sequence? length of nucleotides?
         raise NotImplementedError
 
+    def __hash__(self):
+        return hash(self.canonical_form)
+
 class DSD_RestingState(object):
     """
     A set of complexes.
@@ -1047,6 +1036,8 @@ class DSD_Reaction(object):
     MEMORY = dict()
 
     def __init__(self, reactants, products, rtype=None, rate=None, memorycheck=True):
+        if not(all(isinstance(c, (DSD_Complex, DSD_RestingState)) for c in reactants + products)):
+                    raise DSDObjectsError('recatants and products must be an instance of DSD_Complex')
         self._reactants = reactants
         self._products = products
         self._rtype = rtype
@@ -1054,9 +1045,6 @@ class DSD_Reaction(object):
         
         # Used for __eq__ 
         self._canonical_form = None
-
-        # Not Implemented, ...
-        #self._normalized_form = tuple((self.normalized, rtype))
 
         if memorycheck:
             if self.canonical_form in DSD_Reaction.MEMORY:
@@ -1108,32 +1096,12 @@ class DSD_Reaction(object):
                 "  +  ".join(p.kernel_string for p in self.products))
 
     @property
-    def sorted(self):
-        return "{} -> {}".format(
-            " + ".join(sorted(map(str, self.reactants))), 
-            " + ".join(sorted(map(str, self.products))))
-
-    @property
-    def normalized(self):
-        """
-        Ensures that complexes appear on only one side of the reaction by
-        removing them evenly from both sides until only one side has any.
-        """
-        reactants = self.reactants[:]
-        products = self.products[:]
-
-        for reactant in reactants:
-            while (reactant in reactants and reactant in products):
-                reactants.remove(reactant)
-                products.remove(reactant)
-        return "{} -> {}".format(
-            " + ".join(sorted(map(str, reactants))), 
-            " + ".join(sorted(map(str, products))))
-
-    @property
     def canonical_form(self):
         if not self._canonical_form:
-            self._canonical_form = tuple((self.sorted, self.rtype))
+            react = tuple(sorted(map(lambda x: x.canonical_form, self.reactants)))
+            prods = tuple(sorted(map(lambda x: x.canonical_form, self.products)))
+
+            self._canonical_form = tuple((react, prods, self.rtype))
         return self._canonical_form
 
     def __repr__(self):

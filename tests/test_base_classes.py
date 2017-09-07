@@ -187,7 +187,8 @@ class DSD_ComplexObjectTest(unittest.TestCase):
         bc.clear_memory()
 
     def test_DSD_ComplexInit(self):
-        foo = bc.DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'))
+        foo = bc.DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'), name='a')
+        bar = bc.DSD_Complex(sequence=list('RNANY'), structure=list('(...)'), name='a')
         self.assertIsInstance(foo, bc.DSD_Complex)
 
         self.assertEqual(foo.sequence, list('RNNNY'))
@@ -225,12 +226,17 @@ class DSD_ComplexObjectTest(unittest.TestCase):
                 self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], 
                 structure=list('..(+(+))..'))
 
-        self.assertEqual(foo.canonical_form, ('d1*_d3*_d1*_d2_+_d1_d2_d3_+_d1', 
-            '(_(_._._+_._._)_+_)'))
+        # quick fix to rotate foo into canonical form...
+        foo.rotate_once()
+        tuple(map(str, foo.sequence)), tuple(foo.structure)
+        canon = tuple((tuple(map(str, foo.sequence)), tuple(foo.structure)))
+        foo.rotate_once()
+        foo.rotate_once()
+
+        self.assertEqual(foo.canonical_form, canon)
         with self.assertRaises(TypeError):
             foo.canonical_form[0] = 'cannot change canonical form!'
 
-        self.assertEqual(sorted(foo.strands), sorted(['d1', 'd1*_d3*_d1*_d2', 'd1_d2_d3']))
         self.assertEqual(foo.domains, [self.d1, self.d1c, self.d2, self.d3, self.d3c])
         self.assertEqual(map(str,foo.domains), ['d1', 'd1*', 'd2', 'd3', 'd3*'])
 
@@ -253,7 +259,7 @@ class DSD_ComplexObjectTest(unittest.TestCase):
         with self.assertRaises(IndexError):
             foo.get_paired_loc((2,9))
 
-        #self.assertEqual(foo.exterior_domains, [(0,0),(0,1),(2,2),(2,3)])
+        self.assertEqual(foo.exterior_domains, [(0,0),(0,1),(2,2),(2,3)])
 
     def test_sorting(self):
         foo = bc.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+',
@@ -327,22 +333,36 @@ class DSD_ReactionTest(unittest.TestCase):
         bc.clear_memory()
 
     def test_initialize(self):
-        x = bc.DSD_Reaction(['A','B','C'],['D','A','E'], rtype = 'branch-3way')
+        with self.assertRaises(bc.DSDObjectsError):
+            x = bc.DSD_Reaction(['A','B','C'],['D','A','E'], rtype = 'branch-3way')
+
+        A = bc.DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
+        B = bc.DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
+
+        x = bc.DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
         with self.assertRaises(bc.DSDDuplicationError):
-            y = bc.DSD_Reaction(['A','C','B'],['D','A','E'], rtype = 'branch-3way')
+            y = bc.DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
 
         bc.clear_memory()
-        y = bc.DSD_Reaction(['A','B','C'],['D','A','E'], rtype = 'branch-3way', rate=.5)
-        z = bc.DSD_Reaction(['A','B','C'],['D','A','E'], rtype='bind11')
+        y = bc.DSD_Reaction([A, B],[B, B], rtype = 'branch-3way', rate=.5)
+        z = bc.DSD_Reaction([A],[B], rtype='bind11')
 
-        self.assertEqual('A + B + C -> D + A + E', str(x))
-        self.assertEqual('B + C -> D + E', x.normalized)
-        self.assertEqual('A + B + C -> A + D + E', x.sorted)
-        self.assertEqual(x,y)
+        self.assertEqual('A + B -> B + B', str(x))
+        A.name = 'Z'
+        self.assertEqual('Z + B -> B + B', str(x))
+        self.assertEqual('Z + B -> B + B', str(y))
+
+        self.assertEqual(x, y)
+
+        with self.assertRaises(bc.DSDDuplicationError):
+            y = bc.DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
+
+        self.assertEqual(x, y)
+
         self.assertTrue(x != z)
-        
         self.assertEqual(y.rate, .5)
-        self.assertEqual(y.rateunits, '/M/M/s')
+        self.assertEqual(y.rateunits, '/M/s')
+
 
 if __name__ == '__main__':
     unittest.main()
