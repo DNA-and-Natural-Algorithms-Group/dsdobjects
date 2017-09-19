@@ -11,11 +11,9 @@ with open('LICENSE') as f:
   license = f.read()
 
 # Dynamically figure out the version
-version = __import__('dsdobjects').__version__
-
 setup(
     name='dsdobjects',
-    version=version,
+    version='0.5',
     description='base classes for DSD design',
     long_description=readme,
     author='Stefan Badelt',

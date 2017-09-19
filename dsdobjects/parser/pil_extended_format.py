@@ -72,7 +72,7 @@ def pil_extended_setup():
     reaction = G(T(S("kinetic") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction')) \
              | G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
 
-    restingstate = G(T(S("state") + identifier + S("=") + S('[') + G(delimitedList(identifier)) + S(']') + OneOrMore(LineEnd().suppress()), 'resting-state'))
+    restingset = G(T(S("state") + identifier + S("=") + S('[') + G(delimitedList(identifier)) + S(']') + OneOrMore(LineEnd().suppress()), 'resting-set'))
 
     # kernel notation
     sense = Combine(identifier + O(L("^")) + O(L("*")))
@@ -89,7 +89,7 @@ def pil_extended_setup():
     cplx = G(T(identifier + S("=") + OneOrMore(G(pattern)) + O(conc) +
         OneOrMore(LineEnd().suppress()), 'kernel-complex'))
 
-    stmt = sl_domain | dl_domain | comp_domain | strand | strandcomplex | reaction | cplx | restingstate
+    stmt = sl_domain | dl_domain | comp_domain | strand | strandcomplex | reaction | cplx | restingset
 
     document = StringStart() + ZeroOrMore(LineEnd().suppress()) + \
         OneOrMore(stmt) + StringEnd()

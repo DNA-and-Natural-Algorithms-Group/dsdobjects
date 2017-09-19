@@ -188,7 +188,10 @@ class DSD_ComplexObjectTest(unittest.TestCase):
 
     def test_DSD_ComplexInit(self):
         foo = bc.DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'), name='a')
-        bar = bc.DSD_Complex(sequence=list('RNANY'), structure=list('(...)'), name='a')
+        with self.assertRaises(bc.DSDDuplicationError):
+            bar = bc.DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'), name='a')
+        with self.assertRaises(bc.DSDObjectsError):
+            bar = bc.DSD_Complex(sequence=list('RNANY'), structure=list('(...)'), name='a')
         self.assertIsInstance(foo, bc.DSD_Complex)
 
         self.assertEqual(foo.sequence, list('RNNNY'))
@@ -324,6 +327,21 @@ class DSD_ComplexObjectTest(unittest.TestCase):
                              self.d1, self.d2, self.d3])
         self.assertEqual(foo.structure, list('(+)(..+..)'))
 
+    def test_ErrorChangingStructure(self):
+        t = DummyDomain('t', length=5)
+        d2 = self.d2 #DummyDomain('d2', length=15)
+        d3 = self.d3 #DummyDomain('d3', length=15)
+        a = DummyDomain('a', length=5)
+        b = DummyDomain('b', length=5)
+        c = DummyDomain('c', length=5)
+
+        sequen = [t, d2, d3, '+', d2, d3, '+', ~d3, ~a, '+', ~a, ~b, c, b, a, ~d2, ~t]
+        struct = list('(((+..+)(+.(.))))')
+
+        foo = bc.DSD_Complex(sequen, struct)
+        with self.assertRaises(bc.DSDDuplicationError):
+            foo = bc.DSD_Complex(sequen, struct)
+
 @unittest.skipIf(SKIP, "skipping tests")
 class DSD_ReactionTest(unittest.TestCase):
     def setUp(self):
@@ -363,6 +381,13 @@ class DSD_ReactionTest(unittest.TestCase):
         self.assertEqual(y.rate, .5)
         self.assertEqual(y.rateunits, '/M/s')
 
+    def test_sorting(self):
+        A = bc.DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
+        B = bc.DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
+
+        x = bc.DSD_Reaction([B, A],[B, B], rtype = 'branch-3way')
+        self.assertEqual('B + A -> B + B', str(x))
+ 
 
 if __name__ == '__main__':
     unittest.main()

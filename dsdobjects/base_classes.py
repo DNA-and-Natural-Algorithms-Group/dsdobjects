@@ -280,8 +280,8 @@ def clear_memory():
     DSD_Complex.MEMORY = dict()
     DSD_Complex.NAMES = dict()
     DSD_Complex.ID = 0
-    DSD_RestingState.NAMES = dict()
-    DSD_RestingState.MEMORY = dict()
+    DSD_RestingSet.NAMES = dict()
+    DSD_RestingSet.MEMORY = dict()
     DSD_Reaction.MEMORY = dict()
 
 class ABC_Domain(object):
@@ -623,8 +623,12 @@ class DSD_Complex(object):
         # two complexes are equal if they have equal canonial form
         self._memorycheck = memorycheck
         if self._memorycheck:
+            canon = self.canonical_form # raises duplication error
+            if self._name not in DSD_Complex.NAMES:
+                DSD_Complex.NAMES[self._name] = canon
+            else :
+                raise DSDObjectsError('Duplicate DSD_Complex name!', self._name)
             DSD_Complex.MEMORY[self.canonical_form] = self
-            DSD_Complex.NAMES[self._name] = self.canonical_form
 
     def do_memorycheck(self, current = None, rotations=None):
         if current is None: 
@@ -711,32 +715,34 @@ class DSD_Complex(object):
             p = self._sequence.index('+')
             self._sequence = self._sequence[p + 1:] + ["+"] + self._sequence[:p]
 
-            stack = []
-            for i in range(p):
-                if self._structure[i] == "(":
-                    stack.append(i)
-                elif self._structure[i] == ")":
-                    try :
-                        stack.pop()
-                    except IndexError:
-                        raise DSDObjectsError(
-                                "Unbalanced parenthesis in secondary structure.")
-            for i in stack:
-                self._structure[i] = ")"
+            tmpstruct = self.structure
 
             stack = []
-            for i in reversed(range(p + 1, len(self._structure))):
-                if self._structure[i] == ")":
+            for i in range(p):
+                if tmpstruct[i] == "(":
                     stack.append(i)
-                elif self._structure[i] == "(":
+                elif tmpstruct[i] == ")":
                     try :
                         stack.pop()
                     except IndexError:
                         raise DSDObjectsError(
                                 "Unbalanced parenthesis in secondary structure.")
             for i in stack:
-                self._structure[i] = "("
-            self._structure = self._structure[p + 1:] + ["+"] + self._structure[:p]
+                tmpstruct[i] = ")"
+
+            stack = []
+            for i in reversed(range(p + 1, len(tmpstruct))):
+                if tmpstruct[i] == ")":
+                    stack.append(i)
+                elif tmpstruct[i] == "(":
+                    try :
+                        stack.pop()
+                    except IndexError:
+                        raise DSDObjectsError(
+                                "Unbalanced parenthesis in secondary structure.")
+            for i in stack:
+                tmpstruct[i] = "("
+            self._structure = tmpstruct[p + 1:] + ["+"] + tmpstruct[:p]
         self._pair_table = None
         self._loop_index = None
         self._lol_sequence = None
@@ -920,7 +926,7 @@ class DSD_Complex(object):
     def __hash__(self):
         return hash(self.canonical_form)
 
-class DSD_RestingState(object):
+class DSD_RestingSet(object):
     """
     A set of complexes.
     """
@@ -930,9 +936,9 @@ class DSD_RestingState(object):
 
     def __init__(self, complexes, name='', prefix='r', representative=None, memorycheck=True):
 
-        # Resting states store complexes in canonical form?
+        # Resting sets store complexes in canonical form?
         assert len(set(complexes)) == len(complexes)
-        self._complexes = sorted(complexes, key=lambda x : x.name)
+        self._complexes = sorted(complexes, key=lambda x : x.canonical_form)
 
         if representative :
             assert isinstance(representative, DSD_Complex)
@@ -949,41 +955,39 @@ class DSD_RestingState(object):
 
         # two complexes are equal if they have equal canonial form
         if memorycheck :
-            if self.canonical_form in DSD_RestingState.MEMORY:
-                other = DSD_RestingState.MEMORY[self.canonical_form]
+            if self.canonical_form in DSD_RestingSet.MEMORY:
+                other = DSD_RestingSet.MEMORY[self.canonical_form]
                 if other != self :
-                    raise DSDObjectsError('Conflicting RestingState Assignment:', other)
+                    raise DSDObjectsError('Conflicting RestingSet Assignment:', other)
                 else :
-                    error = DSDDuplicationError('Duplicate Complex specification:', self, other)
+                    error = DSDDuplicationError('Duplicate RestingSet specification:', 
+                            self, other)
                     error.existing = other
                     raise error
-            elif self._name in DSD_RestingState.NAMES:
-                raise DSDObjectsError('Duplicate RestingState name!', self._name)
+            elif self._name in DSD_RestingSet.NAMES:
+                raise DSDObjectsError('Duplicate RestingSet name!', self._name)
             else :
                 for canon in map(lambda x: x.canonical_form, self._complexes):
-                    DSD_RestingState.MEMORY[canon] = self
-                DSD_RestingState.NAMES[self._name] = self.canonical_form
+                    DSD_RestingSet.MEMORY[canon] = self
+                DSD_RestingSet.NAMES[self._name] = self.canonical_form
 
 
     @property
     def name(self):
-        """
-        Gives the name of the resting state
-        """
         return self._name
 
     @property
     def complexes(self):
         """
-        Gives a list of complexes in the resting state
+        A list of complexes in the resting set
         """
         return self._complexes[:]
 
     @property
     def canonical_name(self):
         """
-        Gives the canonical name of the resting state, chosen by the lexicographically lowest
-        name of a complex in the resting state.
+        Gives the canonical name of the resting set, chosen by its "first" 
+        element. (sorted by canonical forms)
         """
         return self._canonical.name
 
@@ -1007,15 +1011,12 @@ class DSD_RestingState(object):
 
     def __eq__(self, other):
         """
-        Two resting states are equal if their complexes are equal
+        Two resting sets are equal if their complexes are equal
         """
         return (self.complexes == other.complexes)
 
-    def __str__(self):
-        return self.canonical_name
-
     def __repr__(self):
-        return "RestingState(\"%s\", %s)" % (self.name, str(self.complexes))
+        return "RestingSet(\"%s\", %s)" % (self.name, str(self.complexes))
 
 class DSD_Reaction(object):
     """ A reaction pathway.
@@ -1036,7 +1037,7 @@ class DSD_Reaction(object):
     MEMORY = dict()
 
     def __init__(self, reactants, products, rtype=None, rate=None, memorycheck=True):
-        if not(all(isinstance(c, (DSD_Complex, DSD_RestingState)) for c in reactants + products)):
+        if not(all(isinstance(c, (DSD_Complex, DSD_RestingSet)) for c in reactants + products)):
                     raise DSDObjectsError('recatants and products must be an instance of DSD_Complex')
         self._reactants = reactants
         self._products = products

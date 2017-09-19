@@ -43,7 +43,7 @@ class TestKERNELparser(unittest.TestCase):
         parse_kernel_string(" reaction [branch-3way =  0.733333 /s   ] e71 -> e11 ")
         parse_kernel_string(" reaction [bind21      =   4.5e+06 /M/s ] e4 + G1bot -> e13")
 
-    def test_restingstate_examples(self):
+    def test_restingset_examples(self):
         with self.assertRaises(ParseException):
             parse_kernel_string(" state e4 = e4")
         parse_kernel_string(" state e4 = [e4]")

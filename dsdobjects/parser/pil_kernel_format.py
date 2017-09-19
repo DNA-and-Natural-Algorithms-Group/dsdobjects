@@ -58,14 +58,14 @@ def pil_kernel_setup():
     cplx = G(T(identifier + S("=") + OneOrMore(pattern) +
                O(conc) + OneOrMore(LineEnd().suppress()), 'complex'))
 
-    restingstate = G(T(S("state") + identifier + S("=") + S('[') + G(delimitedList(identifier)) + S(']') + OneOrMore(LineEnd().suppress()), 'resting-state'))
+    restingset = G(T(S("state") + identifier + S("=") + S('[') + G(delimitedList(identifier)) + S(']') + OneOrMore(LineEnd().suppress()), 'resting-set'))
 
     species = delimitedList(identifier, '+')
     units = W("/M/s")
     infobox = S('[') + G(O(identifier + S('='))) + G(gorf) + S(units) + S(']')
     reaction = G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
 
-    stmt = domain | cplx | reaction | restingstate
+    stmt = domain | cplx | reaction | restingset
 
     document = StringStart() + ZeroOrMore(LineEnd().suppress()) + \
         OneOrMore(stmt) + StringEnd()

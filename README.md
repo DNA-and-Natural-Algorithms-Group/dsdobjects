@@ -64,7 +64,7 @@ $ python ./setup.py install --user
 ```
 
 ## Version
-0.1 -- initial release
+0.5 -- improved canonical forms
 
 ## Author
 Stefan Badelt
