@@ -38,8 +38,10 @@ def pil_kernel_setup():
     num_sci = C(number + O(L('.') + number) + L('e') + O(L('-') | L('+')) + W(nums))
     gorf = num_sci | num_flt
 
-    domain = G(T(S("length") + identifier + S("=") + number +
-                 OneOrMore(LineEnd().suppress()), 'domain'))
+    dlength = number | L('short') | L('long')
+
+    domain = G(T(S("length") + identifier + S("=") + dlength +
+                 OneOrMore(LineEnd().suppress()), 'dl-domain'))
 
     # NOTE: exchange the comment for asense if you want to allow input in form
     # of "x( ... y)", but also double-check if that really works...

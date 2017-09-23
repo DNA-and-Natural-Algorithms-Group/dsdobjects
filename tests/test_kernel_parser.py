@@ -56,6 +56,10 @@ class TestKERNELparser(unittest.TestCase):
         parse_kernel_string("cplx = a( b( c( + ) ) d ) @ initial 100 nM")
         parse_kernel_string("cplx = a( b( c( + ) ) d ) @ initial 1e5 pM")
 
+    def test_more_examples(self):
+        out = parse_kernel_string("length t0 = short")
+        self.assertEqual(out, [['dl-domain', 't0', 'short']])
+
     def test_parse_examples(self):
         example1 = """
         length t0 = 6
@@ -74,12 +78,12 @@ class TestKERNELparser(unittest.TestCase):
         #g31b   = t0* d31* t0*
         """
         output1 = [
-            ['domain', 't0', '6'],
-            ['domain', 'd44', '15'],
-            ['domain', 'f0', '15'],
-            ['domain', 'd31', '15'],
-            ['domain', 'd25', '15'],
-            ['domain', 'Fluor25', '15'],
+            ['dl-domain', 't0', '6'],
+            ['dl-domain', 'd44', '15'],
+            ['dl-domain', 'f0', '15'],
+            ['dl-domain', 'd31', '15'],
+            ['dl-domain', 'd25', '15'],
+            ['dl-domain', 'Fluor25', '15'],
             ['complex', 'w44_31', ['d44', 't0', 'd31']],
             ['complex', 'G31_25', ['d31', ['t0', ['d25', '+']], 't0*']],
             ['complex', 'R25', ['d25', ['Fluor25', '+'], 't0*']],
