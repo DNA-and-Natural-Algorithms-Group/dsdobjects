@@ -571,9 +571,8 @@ class DSD_Complex(object):
         MEMORY:
 
     Args:
-        sequence (list): A list of sequence constraints on this domain.
-        structure (list): A list of dot-parens characters corresponding to the
-            sequence.
+        sequence (list): A domain-level or nucleotide-level sequence.
+        structure (list): A domain-level or nucleotide-level dot-bracket notation.
         name (str, optional): Name of this domain. If not specified, an automatic
             name is generated.
         prefix (str, optional): A prefix for automatic naming of Domains.
@@ -1022,14 +1021,12 @@ class DSD_Reaction(object):
     """ A reaction pathway.
 
     Args:
-      reactants (list): A list of reactants. Reactants can be strings or
-        :obj:`DSD_Complex()` objects.
-      products (list): A list of products. Products can be strings or 
-        :obj:`DSD_Complex()` objects.
-      rtype (str, optional): Reaction type, e.g. bind21, condensed, ..
+      reactants (list): A list of reactants. Reactants can be 
+        :obj:`DSD_RestingSet()` or :obj:`DSD_Complex()` objects.
+      products (list): A list of products. Products can be
+        :obj:`DSD_RestingSet()` or :obj:`DSD_Complex()` objects.
+      rtype (str, optional): Reaction type, e.g. bind21, condensed, .. Defaults to None.
       rate (flt, optional): Reaction rate.
-      name (str, optional): Name of the reaction.
-      prefix (str, optional): Prefix for atomatic naming scheme.
 
     TODO: think about reversible reactions (invert operator, etc)
     """

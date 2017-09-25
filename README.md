@@ -10,8 +10,7 @@ domain-level strand displacement programming:
   - DSD_Reaction
   - DSD_RestingSet
 
-These base classes are currently used in the projects [nuskell] and
-[peppercornenumerator]. An example for extending a base class is shown below:
+An example is shown below:
 
 ```py
 from dsdobjects import DL_Domain
@@ -30,7 +29,7 @@ class MyDomain(DL_Domain):
             if cname in DL_Domain.MEMORY:
                 self._complement = DL_Domain.MEMORY[cname]
             else :
-                self._complement = DummyDomain(cname, self.dtype, self.length)
+                self._complement = MyDomain(cname, self.dtype, self.length)
         return self._complement
 
 ```
@@ -75,6 +74,10 @@ in the [DNA and Natural Algorithms Group], Caltech:
   * "DNAObjecs" coded by Joseph Berleant and Joseph Schaeffer 
   * [peppercornenumerator] coded by Kathrik Sarma, Casey Grun and Erik Winfree
   * [nuskell] coded by Seung Woo Shin
+
+## Projects depending on dsdobjects
+  * [peppercornenumerator]
+  * [nuskell]
 
 
 ## License
