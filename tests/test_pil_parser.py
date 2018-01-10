@@ -74,9 +74,9 @@ class TestPILparser(unittest.TestCase):
         out = parse_pil_string(" kinetic [   1667015.4 /M/s] I3 + C1 -> W + Cat + OP ")
         self.assertEqual(out, [['reaction', [[], ['1667015.4']], ['I3', 'C1'], ['W', 'Cat', 'OP']]])
         out = parse_pil_string(" state e4 = [e4]")
-        self.assertEqual(out, [['resting-set', 'e4', ['e4']]])
+        self.assertEqual(out, [['resting-macrostate', 'e4', ['e4']]])
         out = parse_pil_string(" state e4 = [e4, e5]")
-        self.assertEqual(out, [['resting-set', 'e4', ['e4', 'e5']]])
+        self.assertEqual(out, [['resting-macrostate', 'e4', ['e4', 'e5']]])
 
         # reaction
         out = parse_pil_string(" reaction [branch-3way =  0.733333 /s   ] e71 -> e11 ")

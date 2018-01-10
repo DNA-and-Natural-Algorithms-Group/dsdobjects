@@ -60,7 +60,8 @@ def pil_kernel_setup():
     cplx = G(T(identifier + S("=") + OneOrMore(pattern) +
                O(conc) + OneOrMore(LineEnd().suppress()), 'complex'))
 
-    restingset = G(T(S("state") + identifier + S("=") + S('[') + G(delimitedList(identifier)) + S(']') + OneOrMore(LineEnd().suppress()), 'resting-set'))
+    restingset = G(T(S("state") + identifier + S("=") + S('[') + G(delimitedList(identifier)) + S(']') + OneOrMore(LineEnd().suppress()), 'resting-macrostate')) \
+               | G(T(S("macrostate") + identifier + S("=") + S('[') + G(delimitedList(identifier)) + S(']') + OneOrMore(LineEnd().suppress()), 'resting-macrostate'))
 
     species = delimitedList(identifier, '+')
     units = W("/M/s")
