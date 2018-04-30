@@ -261,6 +261,8 @@ class DSD_ComplexObjectTest(unittest.TestCase):
             foo.get_domain((2,9))
         with self.assertRaises(IndexError):
             foo.get_paired_loc((2,9))
+        with self.assertRaises(IndexError):
+            foo.get_paired_loc((1,-1))
 
         self.assertEqual(foo.exterior_domains, [(0,0),(0,1),(2,2),(2,3)])
 

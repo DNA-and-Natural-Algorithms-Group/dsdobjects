@@ -853,6 +853,12 @@ class DSD_Complex(object):
         return self._lol_sequence[loc[0]][loc[1]]
     
     def get_paired_loc(self, loc):
+        """ 
+        Returns the paired element in the pair-table. 
+        Raises: IndexError if there are negative elements in loc
+        """
+        if loc[0] < 0 or loc[1] < 0:
+            raise IndexError
         if not self._pair_table:
             self._pair_table = utils.make_pair_table(self.structure)
         return self._pair_table[loc[0]][loc[1]]
