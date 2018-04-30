@@ -32,6 +32,16 @@ class DSDObjectsError(Exception):
             self.message = message
         super(DSDObjectsError, self).__init__(self.message)
 
+    @property
+    def existing(self):
+        """return the existing object."""
+        return self._existing
+
+    @existing.setter
+    def existing(self, value):
+        """specify the existing object."""
+        self._existing = value
+
 class DSDDuplicationError(Exception):
     """
     dnaobjects.base_classes duplication error class. 
@@ -445,6 +455,9 @@ class DL_Domain(ABC_Domain):
     def __eq__(self, other):
         return self is other
 
+    def __ne__(self, other):
+        return not (self == other)
+
     def __add__(self, other):
         # We cannot add domains at this point, because adding a domain
         # produces a new composite domain. However, we don't know the
@@ -549,6 +562,9 @@ class SL_Domain(ABC_Domain):
         """
         return self._dtype is other._dtype
 
+    def __ne__(self, other):
+        return not (self == other)
+
     def __add__(self):
         raise NotImplementedError
 
@@ -561,9 +577,9 @@ class DSD_Complex(object):
     both the exisiting complex object and the differences in rotations.
 
     Sequence and structure can be specified on the domain or on the nucleotide
-    level, but they have to be of the same length. Although not yet implemented,
+    level, but they have to be of the same length. Although not implemented,
     one may define special characters for secondary structures that are more
-    diverse than a regual dot-parens string, e.g. 'h' = '(', '.', ')'
+    diverse than a regular dot-bracket string, e.g. 'h' = '(', '.', ')'
 
     Class Variables:
         ID: a counter to assing the next automatic name in a system.
@@ -807,6 +823,7 @@ class DSD_Complex(object):
         # Make a new pair_table every time, it might get modified.
         return utils.make_pair_table(self.structure)
 
+
     @property
     def loop_index(self):
         """ returns the loop index of a structure. """
@@ -925,6 +942,7 @@ class DSD_Complex(object):
     def __hash__(self):
         return hash(self.canonical_form)
 
+# TODO: Rename to DSD_Macrostate(object)?
 class DSD_RestingSet(object):
     """
     A set of complexes.
@@ -957,7 +975,9 @@ class DSD_RestingSet(object):
             if self.canonical_form in DSD_RestingSet.MEMORY:
                 other = DSD_RestingSet.MEMORY[self.canonical_form]
                 if other != self :
-                    raise DSDObjectsError('Conflicting RestingSet Assignment:', other)
+                    error = DSDObjectsError('Conflicting RestingSet Assignment:', other)
+                    error.existing = other
+                    raise error
                 else :
                     error = DSDDuplicationError('Duplicate RestingSet specification:', 
                             self, other)
@@ -1013,6 +1033,9 @@ class DSD_RestingSet(object):
         Two resting sets are equal if their complexes are equal
         """
         return (self.complexes == other.complexes)
+
+    def __ne__(self, other):
+        return not (self == other)
 
     def __repr__(self):
         return "RestingSet(\"%s\", %s)" % (self.name, str(self.complexes))
@@ -1075,7 +1098,6 @@ class DSD_Reaction(object):
     @property
     def reactants(self):
         """list: list of reactants. """
-        #TODO: check copy
         return self._reactants[:]
 
     @property
@@ -1123,3 +1145,6 @@ class DSD_Reaction(object):
     def __hash__(self):
         return hash(self.canonical_form)
 
+#class DSD_StrandOrder(object):
+#    # Nupacks definition of an ordered complex.
+#    pass
