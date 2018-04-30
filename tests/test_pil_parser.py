@@ -69,10 +69,11 @@ class TestPILparser(unittest.TestCase):
         self.assertEqual(out, [['strand-complex', 'AB', ['A', 'B'], '.(((+))) ']])
         out = parse_pil_string(" kinetic 4 + C1 -> 7             ")
         self.assertEqual(out, [['reaction', [], ['4', 'C1'], ['7']]])
+
         out = parse_pil_string(" kinetic [   876687.69 /M/s] I3 + SP -> C2 + Cat ")
-        self.assertEqual(out, [['reaction', [[], ['876687.69']], ['I3', 'SP'], ['C2', 'Cat']]])
+        self.assertEqual(out, [['reaction', [[], ['876687.69'], ['/M/s']], ['I3', 'SP'], ['C2', 'Cat']]])
         out = parse_pil_string(" kinetic [   1667015.4 /M/s] I3 + C1 -> W + Cat + OP ")
-        self.assertEqual(out, [['reaction', [[], ['1667015.4']], ['I3', 'C1'], ['W', 'Cat', 'OP']]])
+        self.assertEqual(out, [['reaction', [[], ['1667015.4'], ['/M/s']], ['I3', 'C1'], ['W', 'Cat', 'OP']]])
         out = parse_pil_string(" state e4 = [e4]")
         self.assertEqual(out, [['resting-macrostate', 'e4', ['e4']]])
         out = parse_pil_string(" state e4 = [e4, e5]")
@@ -80,9 +81,11 @@ class TestPILparser(unittest.TestCase):
 
         # reaction
         out = parse_pil_string(" reaction [branch-3way =  0.733333 /s   ] e71 -> e11 ")
-        self.assertEqual(out, [['reaction', [['branch-3way'], ['0.733333']], ['e71'], ['e11']]])
+        self.assertEqual(out, [['reaction', [['branch-3way'], ['0.733333'], ['/s']], ['e71'], ['e11']]])
         out = parse_pil_string(" reaction [bind21      =   4.5e+06 /M/s ] e4 + G1bot -> e13")
-        self.assertEqual(out, [['reaction', [['bind21'], ['4.5e+06']], ['e4', 'G1bot'], ['e13']]])
+        self.assertEqual(out, [['reaction', [['bind21'], ['4.5e+06'], ['/M/s']], ['e4', 'G1bot'], ['e13']]])
+        out = parse_pil_string(" reaction [bind21      =   4.5e+06 /nM/h ] e4 + G1bot -> e13")
+        self.assertEqual(out, [['reaction', [['bind21'], ['4.5e+06'], ['/nM/h']], ['e4', 'G1bot'], ['e13']]])
 
         # strand-complex
         out = parse_pil_string(" complex IABC : I A B C (((( + ))))((((. + ))))((((. + ))))..... ")

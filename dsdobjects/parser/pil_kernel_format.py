@@ -65,7 +65,7 @@ def pil_kernel_setup():
 
     species = delimitedList(identifier, '+')
     units = W("/M/s")
-    infobox = S('[') + G(O(identifier + S('='))) + G(gorf) + S(units) + S(']')
+    infobox = S('[') + G(O(identifier + S('='))) + G(gorf) + G(units) + S(']')
     reaction = G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
 
     stmt = domain | cplx | reaction | restingset

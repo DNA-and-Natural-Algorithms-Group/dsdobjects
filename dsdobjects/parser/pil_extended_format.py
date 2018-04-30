@@ -13,6 +13,8 @@ from pyparsing import (Word, Literal, Group, Suppress, Optional, ZeroOrMore,
         StringStart, StringEnd, Forward, LineEnd, pythonStyleComment,
         ParseElementEnhance)
 
+class PilFormatError(Exception):
+    pass
 
 def pil_extended_setup():
     crn_DWC = "".join(
@@ -66,8 +68,10 @@ def pil_extended_setup():
                     + dotbracket + OneOrMore(LineEnd().suppress()), 'strand-complex'))
 
     species = delimitedList(identifier, '+')
-    units = W("/M/s")
-    infobox = S('[') + G(O(identifier + S(assign))) + G(gorf) + S(units) + S(']')
+    cunit = L('M') | L('mM') | L('uM') | L('nM') | L('pM') 
+    tunit = L('s') | L('m') | L('h')
+    runit = C(ZeroOrMore('/' + cunit) + L('/') + tunit)
+    infobox = S('[') + G(O(identifier + S(assign))) + G(gorf) + G(runit) + S(']')
 
     reaction = G(T(S("kinetic") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction')) \
              | G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
@@ -83,9 +87,8 @@ def pil_extended_setup():
     loop = (Combine(sense + S("(")) + G(O(innerloop)) + S(")"))
     pattern << OneOrMore(loop | L("+") | sense)
 
-    unit = L('M') | L('mM') | L('uM') | L('nM') | L('pM')
-    conc = G( S('@') + L('initial') + gorf + unit) \
-         | G( S('@') + L('constant') + gorf + unit)
+    conc = G( S('@') + (L('initial')  | L('i')) + gorf + cunit) \
+         | G( S('@') + (L('constant') | L('c')) + gorf + cunit)
 
     cplx = G(T(identifier + S("=") + OneOrMore(G(pattern)) + O(conc) +
         OneOrMore(LineEnd().suppress()), 'kernel-complex'))
