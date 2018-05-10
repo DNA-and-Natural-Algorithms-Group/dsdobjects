@@ -71,7 +71,7 @@ def pil_extended_setup():
     cunit = L('M') | L('mM') | L('uM') | L('nM') | L('pM') 
     tunit = L('s') | L('m') | L('h')
     runit = C(ZeroOrMore('/' + cunit) + L('/') + tunit)
-    infobox = S('[') + G(O(identifier + S(assign))) + G(gorf) + G(runit) + S(']')
+    infobox = S('[') + G(O(identifier + S(assign))) + G(gorf + O(S(L('+/-')) + gorf)) + G(runit) + S(']')
 
     reaction = G(T(S("kinetic") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction')) \
              | G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))
