@@ -63,6 +63,9 @@ $ python ./setup.py install --user
 ```
 
 ## Version
+0.6 -- PIL parser supports concentration format
+     - __ne__ bugfixes in base_classes.py
+     - supports rate-error bars when parsing PIL format
 0.5 -- improved canonical forms
 
 ## Author

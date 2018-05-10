@@ -13,7 +13,7 @@ with open('LICENSE') as f:
 # Dynamically figure out the version
 setup(
     name='dsdobjects',
-    version='0.5',
+    version='0.6',
     description='base classes for DSD design',
     long_description=readme,
     author='Stefan Badelt',
