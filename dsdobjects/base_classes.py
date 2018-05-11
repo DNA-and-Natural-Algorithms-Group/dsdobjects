@@ -798,7 +798,7 @@ class DSD_Complex(object):
                 knl += str(seq[i]) + str(sst[i]) + ' '
             else:
                 knl += str(seq[i]) + ' '
-        return knl
+        return knl[:-1]
 
     @property
     def domains(self):
