@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# -*- coding: utf-8 -*-
-
 from setuptools import setup, find_packages
 
 with open('README.md') as f:
@@ -14,11 +12,16 @@ with open('LICENSE') as f:
 setup(
     name='dsdobjects',
     version='0.6',
-    description='base classes for DSD design',
+    description='Base classes for DSD design',
     long_description=readme,
+    url='https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects',
     author='Stefan Badelt',
     author_email='badelt@caltech.edu',
     license=license,
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Programming Language :: Python :: 2.7',
+        ],
     packages=['dsdobjects', 'dsdobjects.parser'],
     test_suite='tests',
 )
