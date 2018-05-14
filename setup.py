@@ -2,22 +2,26 @@
 
 from setuptools import setup, find_packages
 
-with open('README.md') as f:
-  readme = f.read()
+LONG_DESCRIPTION="""
+This module provides Python parent classes for domain-level strand displacement
+programming, e.g:
+ - SequenceConstraint
+ - DL_Domain
+ - SL_Domain
+ - DSD_Complex
+ - DSD_Reaction
+ - DSD_RestingSet
+"""
 
-with open('LICENSE') as f:
-  license = f.read()
-
-# Dynamically figure out the version
 setup(
     name='dsdobjects',
-    version='0.6',
+    version='0.6.1',
     description='Base classes for DSD design',
-    long_description=readme,
+    long_description=LONG_DESCRIPTION,
     url='https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects',
     author='Stefan Badelt',
     author_email='badelt@caltech.edu',
-    license=license,
+    license='MIT',
     download_url = 'https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects/archive/v0.6.tar.gz',
     classifiers=[
         'Development Status :: 3 - Alpha',

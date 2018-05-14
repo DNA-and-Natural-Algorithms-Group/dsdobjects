@@ -63,6 +63,8 @@ $ python ./setup.py install --user
 ```
 
 ## Version
+0.6.1 -- adapted setup.py when used as pypi dependency
+
 0.6 -- PIL parser supports concentration format
   * "non-equal" bugfixes in base_classes.py
   * supports rate-error bars when parsing PIL format
