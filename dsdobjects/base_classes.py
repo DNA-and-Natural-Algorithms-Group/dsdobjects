@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # dsdobjects.base_classes
 #   - copy and/or modify together with tests/test_base_classes.py
@@ -907,7 +906,7 @@ class DSD_Complex(object):
             try :
                 # make loop index raises error when disconnected.
                 self._loop_index, self._exterior_loops = utils.make_loop_index(self._pair_table)
-            except utils.DSDUtilityError, e:
+            except utils.DSDUtilityError as e:
                 return False
         return True
 

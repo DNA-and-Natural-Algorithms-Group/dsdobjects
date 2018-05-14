@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # dsdobjects.utils
 #   - copy and/or modify together with tests/test_utils.py
