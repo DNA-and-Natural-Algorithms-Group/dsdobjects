@@ -15,7 +15,7 @@ programming, e.g:
 
 setup(
     name='dsdobjects',
-    version='0.6.1',
+    version='0.6.2',
     description='Base classes for DSD design',
     long_description=LONG_DESCRIPTION,
     url='https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects',
@@ -27,6 +27,7 @@ setup(
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 2.7',
         ],
+    install_requires=['future'],
     packages=['dsdobjects', 'dsdobjects.parser'],
     test_suite='tests',
 )
