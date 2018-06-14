@@ -961,13 +961,13 @@ class DSD_RestingSet(object):
         # Resting sets store complexes in canonical form?
         assert len(set(complexes)) == len(complexes)
         self._complexes = sorted(complexes, key=lambda x : x.canonical_form)
-
-        if representative :
+        
+        if representative is None:
+            self._canonical = self._complexes[0]
+        else:
             assert isinstance(representative, DSD_Complex)
             assert representative in set(complexes)
             self._canonical = representative
-        else :
-            self._canonical = self._complexes[0]
 
         # Assign name
         if name:
