@@ -6,7 +6,7 @@
 # Distributed under the MIT License, use at your own risk.
 #
 
-__version__='0.6.2'
+__version__='0.6.3'
 
 from dsdobjects.base_classes import clear_memory
 from dsdobjects.base_classes import DSDObjectsError, DSDDuplicationError 

@@ -63,6 +63,7 @@ $ python ./setup.py install --user
 ```
 
 ## Version
+0.6.3 -- added parser for seesaw language
 0.6.2 -- bugfix for restingsets with given representative
 0.6.1 -- adapted setup.py when used as pypi dependency
 

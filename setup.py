@@ -15,7 +15,7 @@ programming, e.g:
 
 setup(
     name='dsdobjects',
-    version='0.6.2',
+    version='0.6.3',
     description='Base classes for DSD design',
     long_description=LONG_DESCRIPTION,
     url='https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects',
