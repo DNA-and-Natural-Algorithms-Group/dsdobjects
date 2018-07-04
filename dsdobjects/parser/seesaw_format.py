@@ -30,9 +30,14 @@ def ssw_document_setup():
   S = Suppress
   O = Optional
   L = Literal
+  C = Combine
  
   identifier = W(alphas, alphanums + "_-")
   number = W(nums, nums)
+  num_flt = C(number + O(L('.') + number))
+  num_sci = C(number + O(L('.') + number) + L('e') + O(L('-') | L('+')) + W(nums))
+  gorf = num_sci | num_flt
+
 
   wire = G('w' + S('[') + G(number + S(',') + (number | L('f'))) + S(']'))
   gateO = G('g' + S('[') + G(wire + S(',') + number) + S(']'))
@@ -49,7 +54,7 @@ def ssw_document_setup():
   outputs= G(S("{") + delimitedList((number | L('f')), ",") + S("}"))
   seesaw = 'seesaw' + S('[') + G(number + S(',') + inputs + S(',') + outputs) + S(']')
 
-  conc = number + S(L('*') + L('c'))
+  conc = gorf + S(L('*') + L('c'))
   wireconc = 'conc' + S('[') + wire + S(',') + conc + S(']')
   outpconc = 'conc' + S('[') + (gateO | gateI) + S(',') + conc + S(']')
   thshconc = 'conc' + S('[') + (thshO | thshI) + S(',') + conc + S(']')

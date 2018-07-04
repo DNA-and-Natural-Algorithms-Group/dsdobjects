@@ -78,6 +78,16 @@ class TestSeeSawParser(unittest.TestCase):
         out = parse_seesaw_string("conc[th[13, w[31, 44]], 1*c]")
         self.assertEqual(out, [['conc', ['th', ['13', ['w', ['31', '44']]]], '1']])
 
+        #non-integer concentration
+        out = parse_seesaw_string("conc[th[13, w[31, 44]], 0.5*c]")
+        self.assertEqual(out, [['conc', ['th', ['13', ['w', ['31', '44']]]], '0.5']])
+
+        #negative concentration
+        with self.assertRaises(ParseException):
+            print parse_seesaw_string("conc[th[13, w[31, 44]], -0.5*c]")
+
+        with self.assertRaises(ParseException):
+            print parse_seesaw_string("conc[th[13, w[31, 44]], -1*c]")
 
     def test_parse_examples(self):
         example = """
