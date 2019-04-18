@@ -39,6 +39,7 @@ def pil_extended_setup():
     num_flt = C(number + O(L('.') + number))
     num_sci = C(number + O(L('.') + number) + L('e') + O(L('-') | L('+')) + W(nums))
     gorf = num_sci | num_flt
+    ginf = gorf | L('inf')
 
     domain = C(identifier + O('*'))
     constraint = W(alphas)
@@ -71,7 +72,7 @@ def pil_extended_setup():
     cunit = L('M') | L('mM') | L('uM') | L('nM') | L('pM') 
     tunit = L('s') | L('m') | L('h')
     runit = C(ZeroOrMore('/' + cunit) + L('/') + tunit)
-    infobox = S('[') + G(O(identifier + S(assign))) + G(gorf + O(S(L('+/-')) + gorf)) + G(runit) + S(']')
+    infobox = S('[') + G(O(identifier + S(assign))) + G(gorf + O(S(L('+/-')) + ginf)) + G(runit) + S(']')
 
     reaction = G(T(S("kinetic") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction')) \
              | G(T(S("reaction") + G(O(infobox)) + G(species) + S('->') + G(species) + OneOrMore(LineEnd().suppress()), 'reaction'))

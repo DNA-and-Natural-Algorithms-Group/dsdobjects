@@ -110,6 +110,9 @@ class TestPILparser(unittest.TestCase):
         out = parse_pil_string("reaction [k1 =  1.41076e+07 +/-  1.47099e+06 /M/s] A + B -> A_B")
         self.assertEqual(out, [['reaction', [['k1'], ['1.41076e+07', '1.47099e+06'], ['/M/s']], ['A', 'B'], ['A_B']]])
 
+        out = parse_pil_string("reaction [k1 =  1.41076e+07 +/-  inf /M/s] A + B -> A_B")
+        self.assertEqual(out, [['reaction', [['k1'], ['1.41076e+07', 'inf'], ['/M/s']], ['A', 'B'], ['A_B']]])
+
     def test_resting_macrostate(self):
         out = parse_pil_string(" state e4 = [e4]")
         self.assertEqual(out, [['resting-macrostate', 'e4', ['e4']]])
