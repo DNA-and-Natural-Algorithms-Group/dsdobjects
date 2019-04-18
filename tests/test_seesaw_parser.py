@@ -20,6 +20,9 @@ class TestSeeSawParser(unittest.TestCase):
         out = parse_seesaw_string("INPUT(1) = w[44, 31]")
         self.assertEqual(out, [['INPUT', ['1'], ['w', ['44', '31']]]])
 
+        out = parse_seesaw_string("OUTPUT(1) = w[44, 31]")
+        self.assertEqual(out, [['OUTPUT', ['1'], ['w', ['44', '31']]]])
+
         out = parse_seesaw_string("OUTPUT(2) = Fluor[25]")
         self.assertEqual(out, [['OUTPUT', ['2'], ['Fluor', '25']]])
 
@@ -27,17 +30,20 @@ class TestSeeSawParser(unittest.TestCase):
         self.assertEqual(out, [['INPUT', ['x1'], ['w', ['44', '31']]]])
 
         with self.assertRaises(ParseException):
-            print parse_seesaw_string("OUTPUT(21x) = Fluor[25]")
+            print(parse_seesaw_string("INPUT(1) = Fluor[25]"))
+
+        with self.assertRaises(ParseException):
+            print(parse_seesaw_string("OUTPUT(21x) = Fluor[25]"))
 
     def test_seesaw(self):
         out = parse_seesaw_string("seesaw[31, {44}, {25, f}]")
         self.assertEqual(out, [['seesaw', ['31', ['44'], ['25', 'f']]]])
 
         with self.assertRaises(ParseException):
-            print parse_seesaw_string("seesaw[31, 19, {44}, {25, f}]")
+            print(parse_seesaw_string("seesaw[31, 19, {44}, {25, f}]"))
 
         with self.assertRaises(ParseException):
-            print parse_seesaw_string("seesaw[31, 44, {25, f}]")
+            print(parse_seesaw_string("seesaw[31, 44, {25, f}]"))
 
 
     def test_gates(self):
@@ -54,10 +60,10 @@ class TestSeeSawParser(unittest.TestCase):
         self.assertEqual(out, [['reporter', ['13', '44']]])
 
         with self.assertRaises(ParseException):
-            print parse_seesaw_string("seesawOR[1, {3, 9, 17}, {13, 19, 117}]")
+            print(parse_seesaw_string("seesawOR[1, {3, 9, 17}, {13, 19, 117}]"))
         
         with self.assertRaises(ParseException):
-            print parse_seesaw_string("inputfanout[1, {44}, {3, 9,17}]")
+            print(parse_seesaw_string("inputfanout[1, {44}, {3, 9,17}]"))
 
     def test_concentrations(self):
         #wires
@@ -84,10 +90,10 @@ class TestSeeSawParser(unittest.TestCase):
 
         #negative concentration
         with self.assertRaises(ParseException):
-            print parse_seesaw_string("conc[th[13, w[31, 44]], -0.5*c]")
+            print(parse_seesaw_string("conc[th[13, w[31, 44]], -0.5*c]"))
 
         with self.assertRaises(ParseException):
-            print parse_seesaw_string("conc[th[13, w[31, 44]], -1*c]")
+            print(parse_seesaw_string("conc[th[13, w[31, 44]], -1*c]"))
 
     def test_parse_examples(self):
         example = """
