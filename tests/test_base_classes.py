@@ -151,7 +151,8 @@ class SL_Domain_Test(unittest.TestCase):
         foo1 = bc.SL_Domain(self.foo, 'HHHHHHH', variant='1')
         foo2 = bc.SL_Domain(self.foo, 'NNNNNNN', variant='2')
         
-        self.assertEqual(foo, foo1)
+        self.assertTrue(foo.is_logic(foo1))
+        self.assertFalse(foo == foo1)
         self.assertFalse(foo is foo1)
 
         with self.assertRaises(bc.DSDObjectsError):
@@ -241,7 +242,7 @@ class DSD_ComplexObjectTest(unittest.TestCase):
             foo.canonical_form[0] = 'cannot change canonical form!'
 
         self.assertEqual(foo.domains, [self.d1, self.d1c, self.d2, self.d3, self.d3c])
-        self.assertEqual(map(str,foo.domains), ['d1', 'd1*', 'd2', 'd3', 'd3*'])
+        self.assertEqual(list(map(str,foo.domains)), ['d1', 'd1*', 'd2', 'd3', 'd3*'])
 
         # Make sure pair table is returned and immutable.
         self.assertEqual(foo.pair_table, 
@@ -380,8 +381,22 @@ class DSD_ReactionTest(unittest.TestCase):
         self.assertEqual(x, y)
 
         self.assertTrue(x != z)
-        self.assertEqual(y.rate, .5)
+        self.assertEqual(y.rate.constant, .5)
+        self.assertEqual(y.const, .5)
         self.assertEqual(y.rateunits, '/M/s')
+
+        x = y.rateformat(['M','s'])
+        self.assertEqual(x.constant,  0.5)
+        x = y.rateformat(['mM','s'])
+        self.assertEqual(x.constant,  0.0005)
+        x = y.rateformat(['uM','s'])
+        self.assertEqual(x.constant,  0.0000005)
+        x = y.rateformat(['nM','s'])
+        self.assertEqual(x.constant,  0.0000000005)
+        x = y.rateformat(['pM','s'])
+        self.assertEqual(x.constant,  0.0000000000005)
+        y.rate = y.rateformat(['mM','s'])
+        self.assertEqual(y.rate.constant,  0.0005)
 
     def test_sorting(self):
         A = bc.DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
@@ -408,7 +423,50 @@ class DSD_ReactionSetTest(unittest.TestCase):
         x = bc.DSD_RestingSet([A, B], representative=B)
         self.assertEqual(x.canonical, B)
         
+@unittest.skipIf(SKIP, "skipping tests")
+class DSD_StrandOrder(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        bc.clear_memory()
+
+    def test_initialize(self):
+        d1 = DummyDomain('d1', length=5)
+        d2 = DummyDomain('d2', length=5)
+        d3 = DummyDomain('d3', length=5)
+        A = bc.DSD_StrandOrder([d1, d2], name='A')
+        B = bc.DSD_StrandOrder([d3, ~d2, ~d1, '+', d2], name='B')
+
+        with self.assertRaises(bc.DSDDuplicationError):
+            C = bc.DSD_StrandOrder([d2, '+', d3, ~d2, ~d1], name='C')
         
+        self.assertEqual(A.canonical_form, (('d1', 'd2'),))
+        self.assertEqual(A.sequence, [d1, d2])
+        self.assertEqual(A.kernel_string, 'd1 d2')
+        self.assertEqual(A.name, 'A')
+
+        self.assertEqual(B.canonical_form, (('d2',), ('d3', 'd2*', 'd1*')))
+        self.assertEqual(B.sequence, [d3, ~d2, ~d1, '+', d2])
+        self.assertEqual(B.kernel_string, 'd3 d2* d1* + d2')
+        self.assertEqual(B.name, 'B')
+
+        with self.assertRaises(bc.DSDObjectsError):
+            B.name = 'A'
+
+        A.name = 'C'
+        self.assertEqual(A.canonical_form, (('d1', 'd2'),))
+        self.assertEqual(A.sequence, [d1, d2])
+        self.assertEqual(A.kernel_string, 'd1 d2')
+        self.assertEqual(A.name, 'C')
+
+        B.name = 'A'
+        self.assertEqual(B.canonical_form, (('d2',), ('d3', 'd2*', 'd1*')))
+        self.assertEqual(B.sequence, [d3, ~d2, ~d1, '+', d2])
+        self.assertEqual(B.kernel_string, 'd3 d2* d1* + d2')
+        self.assertEqual(B.name, 'A')
+
+
  
 if __name__ == '__main__':
     unittest.main()

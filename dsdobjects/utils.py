@@ -7,6 +7,8 @@
 # Distributed under the MIT License, use at your own risk.
 #
 
+from functools import reduce
+
 class DSDUtilityError(Exception):
     """
     dnaobjects.basic error class.
@@ -219,4 +221,36 @@ def split_complex(lol_seq, ptable):
     new_pt=reduce(lambda a,b:a+['+']+b if b else a+b,new_pt)
     parts.append((new_seq, new_pt))
     return parts
+
+def resolve_loops(loop):
+    """ Return a sequence, structure pair from kernel format with parenthesis. """
+    sequen = []
+    struct = []
+    for dom in loop :
+        if isinstance(dom, str):
+            sequen.append(dom)
+            if dom == '+' :
+                struct.append('+')
+            else :
+                struct.append('.')
+        elif isinstance(dom, list):
+            struct[-1] = '('
+            old = sequen[-1]
+            se, ss = resolve_loops(dom)
+            sequen.extend(se)
+            struct.extend(ss)
+            sequen.append(old + '*' if old[-1] != '*' else old[:-1])
+            struct.append(')')
+    return sequen, struct
+
+def convert_units(val, unit_in, unit_out):
+    conc = {'M':1, 'mM':1e-3, 'uM':1e-6, 'nM':1e-9, 'pM':1e-12}
+    time = {'ns':1e-9, 'us':1e-6, 'ms':1e-3, 's':1, 'min':60, 'hours':3600, 'days':86400}
+    if unit_in in conc:
+        return val*conc[unit_in]/conc[unit_out]
+    elif unit_in in time:
+        return val*time[unit_in]/time[unit_out]
+    else:
+        raise DSDUtilityError('Unknown unit for conversion: {}'.format(unit_in))
+
 

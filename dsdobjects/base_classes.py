@@ -16,6 +16,7 @@
 
 # Python 3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
+from collections import namedtuple
 
 import dsdobjects.utils as utils
 
@@ -178,7 +179,7 @@ class SequenceConstraint(object):
 
     def _merge_constraints(self, con, con2):
         """Return a new list of unified constraints. """
-        return map(self._iupac_union, zip(con, con2))
+        return list(map(self._iupac_union, zip(con, con2)))
 
     def _iupac_to_bases(self, nuc):
         # This is more of educational purpose, use _iupac_bin and _bin_iupac
@@ -286,6 +287,9 @@ def clear_memory():
     """
     DL_Domain.MEMORY = dict()
     SL_Domain.MEMORY = dict()
+    DSD_StrandOrder.MEMORY = dict()
+    DSD_StrandOrder.NAMES = dict()
+    DSD_StrandOrder.ID = 0
     DSD_Complex.MEMORY = dict()
     DSD_Complex.NAMES = dict()
     DSD_Complex.ID = 0
@@ -451,6 +455,9 @@ class DL_Domain(ABC_Domain):
     def dtype(self):
         return self._dtype
 
+    def __key__(self):
+        return self.name
+
     def __eq__(self, other):
         return self is other
 
@@ -462,6 +469,12 @@ class DL_Domain(ABC_Domain):
         # produces a new composite domain. However, we don't know the
         # name of this new domain in this basic class.
         raise NotImplementedError
+
+    def __lt__(self, other):
+        return self.__key__() < other.__key__()
+
+    def __hash__(self):
+        return hash(self.__key__())
 
 class SL_Domain(ABC_Domain):
     """ An *instance* of a sequence-level domain.
@@ -513,6 +526,10 @@ class SL_Domain(ABC_Domain):
         return self._name
 
     @property
+    def dtype(self):
+        return self._dtype
+
+    @property
     def sequence(self):
         return self._sequence
 
@@ -535,13 +552,13 @@ class SL_Domain(ABC_Domain):
     def complement(self):
         dtcomp = self._dtype.complement
         if dtcomp.name in SL_Domain.MEMORY:
-            return SL_Domain.MEMORY[dtcomp.name].values()
+            return list(SL_Domain.MEMORY[dtcomp.name].values())
         else :
             raise DSDObjectsError('Complement has not been initialized.')
 
     @property
     def variants(self):
-        return SL_Domain.MEMORY[self._dtype.name].values()
+        return list(SL_Domain.MEMORY[self._dtype.name].values())
 
     @property
     def length(self):
@@ -552,8 +569,11 @@ class SL_Domain(ABC_Domain):
     #    """
     #    return ~self._dtype
 
-    def __eq__(self, other):
-        """ Domains are equal if their dtypes are equal.
+    def __key__(self):
+        return self.name
+
+    def is_logic(self, other):
+        """ Domains are logically equivalent if their dtypes are equal.
 
         Note: This means that two instances of domains may be equal but differ
         on the sequence level. This is intended, as sequence-level modifications
@@ -561,11 +581,29 @@ class SL_Domain(ABC_Domain):
         """
         return self._dtype is other._dtype
 
+    def __eq__(self, other):
+        """ Domains are equal if their names are equal
+
+        Note: This means that two instances of domains may be equal but differ
+        on the sequence level. This is intended, as sequence-level modifications
+        may be used to fine-tune context-dependent reaction dynamics.
+        """
+        if not isinstance(self, SL_Domain) or not isinstance(other, SL_Domain):
+            return False
+        return self.__key__() is other.__key__()
+
     def __ne__(self, other):
         return not (self == other)
 
     def __add__(self):
         raise NotImplementedError
+
+    def __lt__(self, other):
+        return self.__key__() < other.__key__()
+
+    def __hash__(self):
+        return hash(self.__key__())
+
 
 class DSD_Complex(object):
     """A sequence and structure pair.
@@ -587,6 +625,7 @@ class DSD_Complex(object):
 
     Args:
         sequence (list): A domain-level or nucleotide-level sequence.
+            TODO: enable to pass a DSD_StrandOrder instead.
         structure (list): A domain-level or nucleotide-level dot-bracket notation.
         name (str, optional): Name of this domain. If not specified, an automatic
             name is generated.
@@ -616,7 +655,6 @@ class DSD_Complex(object):
             raise DSDObjectsError(
                 "DSD_Complex() sequence and structure must have same length")
 
-
         # should remain in same order as initialized
         self._sequence = sequence
         self._structure = structure
@@ -632,6 +670,7 @@ class DSD_Complex(object):
         self._strands = None
         self._domains = None
         self._exterior_domains = None
+        self._enclosed_domains = None
 
         # rotate strands into a canonical form.
         # two complexes are equal if they have equal canonial form
@@ -693,7 +732,7 @@ class DSD_Complex(object):
         if not self._canonical_form:
             all_variants = dict()
             for e, new in enumerate(self.rotate(), 1):
-                canon = tuple((tuple(map(str,self.sequence)), tuple(self.structure)))
+                canon = tuple((tuple(map(str,self._sequence)), tuple(self._structure)))
                 if canon not in all_variants:
                     all_variants[canon] = e
                     if self._memorycheck:
@@ -705,17 +744,24 @@ class DSD_Complex(object):
 
     @property
     def size(self):
+        """Size of the complex is the number of strands."""
         if not self._strand_lengths :
             if not self._lol_sequence:
                 self._lol_sequence = utils.make_lol_sequence(self._sequence)
-            self._strand_lengths = map(len, self._lol_sequence)
+            self._strand_lengths = list(map(len, self._lol_sequence))
         return len(self._strand_lengths)
-            
+ 
+    @property
+    def rotations(self):
+        """Cyclic permutations between representation and canonical form."""
+        return self._rotations
+
+           
     def strand_length(self, pos):
         if not self._strand_lengths :
             if not self._lol_sequence:
                 self._lol_sequence = utils.make_lol_sequence(self._sequence)
-            self._strand_lengths = map(len, self._lol_sequence)
+            self._strand_lengths = list(map(len, self._lol_sequence))
         return self._strand_lengths[pos]
  
     def rotate(self):
@@ -785,8 +831,8 @@ class DSD_Complex(object):
     @property
     def kernel_string(self):
         """str: print sequence and structure in `kernel` notation. """
-        seq = self.sequence
-        sst = self.structure
+        seq = self._sequence
+        sst = self._structure
         knl = ''
         for i in range(len(seq)):
             if sst[i] == '+':
@@ -804,7 +850,7 @@ class DSD_Complex(object):
         """ Returns a list of domains (sorted/unique) """
         if not self._domains:
             try :
-                self._domains = set(self.sequence)
+                self._domains = set(self._sequence)
                 if '+' in self._domains: self._domains.remove('+')
                 self._domains = sorted(self._domains, key = lambda x: x.name)
             except AttributeError:
@@ -863,7 +909,18 @@ class DSD_Complex(object):
         return self._pair_table[loc[0]][loc[1]]
 
     @property
+    def enclosed_domains(self):
+        if not self._enclosed_domains:
+            # Ask for exterior domains, that will also
+            # fill the enclosed domains
+            _ = self.exterior_domains
+        return self._enclosed_domains
+
+    @property
     def exterior_domains(self):
+        """
+        Returns all domains in exterior loops.
+        """
         if not self._exterior_domains:
             if not self._pair_table:
                 self._pair_table = utils.make_pair_table(self.structure)
@@ -871,11 +928,14 @@ class DSD_Complex(object):
                 self._loop_index, self._exterior_loops = utils.make_loop_index(self._pair_table)
 
             self._exterior_domains = []
+            self._enclosed_domains = []
             for si, strand in enumerate(self._loop_index):
                 for di, domain in enumerate(strand):
                     if self._loop_index[si][di] in self._exterior_loops:
                         if self._pair_table[si][di] is None:
                             self._exterior_domains.append((si, di))
+                    elif self._pair_table[si][di] is None:
+                            self._enclosed_domains.append((si, di))
         return self._exterior_domains
 
     # Sanity Checks
@@ -943,6 +1003,9 @@ class DSD_Complex(object):
     def __len__(self):
         # ambiguos... length of sequence? length of nucleotides?
         raise NotImplementedError
+
+    def __lt__(self, other):
+        return self.canonical_form < other.canonical_form
 
     def __hash__(self):
         return hash(self.canonical_form)
@@ -1054,12 +1117,13 @@ class DSD_Reaction(object):
       products (list): A list of products. Products can be
         :obj:`DSD_RestingSet()` or :obj:`DSD_Complex()` objects.
       rtype (str, optional): Reaction type, e.g. bind21, condensed, .. Defaults to None.
-      rate (flt, optional): Reaction rate.
+      rate (flt, optional): Reaction rate. A reaction rate 
 
     TODO: think about reversible reactions (invert operator, etc)
     """
 
     MEMORY = dict()
+    Rate = namedtuple('rate', 'constant units')
 
     def __init__(self, reactants, products, rtype=None, rate=None, memorycheck=True):
         if not(all(isinstance(c, (DSD_Complex, DSD_RestingSet)) for c in reactants + products)):
@@ -1067,7 +1131,11 @@ class DSD_Reaction(object):
         self._reactants = reactants
         self._products = products
         self._rtype = rtype
-        self._rate = rate
+
+        if rate is None or isinstance(rate, DSD_Reaction.Rate):
+            self._rate = rate 
+        else: 
+            self._rate = DSD_Reaction.Rate(rate, ['M'] * (self.arity[0] - 1) + ['s']) 
         
         # Used for __eq__ 
         self._canonical_form = None
@@ -1083,17 +1151,37 @@ class DSD_Reaction(object):
 
     @property
     def rate(self):
-        """flt: reaction rate. """
+        """Return reaction rate constant and units."""
         return self._rate
 
     @rate.setter
     def rate(self, value):
+        """Set reaction rate constant and units."""
+        assert isinstance(value, DSD_Reaction.Rate)
         self._rate = value
 
     @property
+    def const(self):
+        """Return reaction rate constant."""
+        return self._rate if self._rate is None else self._rate.constant
+
+    @const.setter
+    def const(self, value):
+        """Set reaction rate with SI units."""
+        self._rate = DSD_Reaction.Rate(value, ['M'] * (self.arity[0] - 1) + ['s']) 
+
+    @property
     def rateunits(self):
-        """str: reaction rate units. """
-        return "/M" * (self.arity[0] - 1) + "/s"
+        """Return reaction rate units."""
+        return ''.join(map('/{}'.format, self._rate.units))
+
+    def rateformat(self, output_units):
+        """Set reaction rate constant and units."""
+        assert isinstance(output_units, list)
+        newc = self.const
+        for i,o in zip(self._rate.units, output_units):
+            newc = utils.convert_units(newc, o, i) # 1/M 1/s
+        return DSD_Reaction.Rate(newc, output_units)
 
     @property
     def rtype(self):
@@ -1123,8 +1211,8 @@ class DSD_Reaction(object):
     @property
     def canonical_form(self):
         if not self._canonical_form:
-            react = tuple(sorted(map(lambda x: x.canonical_form, self.reactants)))
-            prods = tuple(sorted(map(lambda x: x.canonical_form, self.products)))
+            react = tuple(sorted(list(map(lambda x: x.canonical_form, self.reactants))))
+            prods = tuple(sorted(list(map(lambda x: x.canonical_form, self.products))))
 
             self._canonical_form = tuple((react, prods, self.rtype))
         return self._canonical_form
@@ -1150,6 +1238,126 @@ class DSD_Reaction(object):
     def __hash__(self):
         return hash(self.canonical_form)
 
-#class DSD_StrandOrder(object):
-#    # Nupacks definition of an ordered complex.
-#    pass
+class DSD_StrandOrder(object):
+    """ A single strand, or a list of strands in specific order.
+
+    Cyclic permutations of a strand order are equivalent.
+
+    The sequence of a strand order must be a sequence of domains.
+
+    """
+
+    ID = 0          # ID is used to assign names automatically
+    NAMES = dict()  # NAMES[name] = canonical_form
+    MEMORY = dict() # MEMORY[canonical_form] = self
+
+    # Canonical form for strand order
+    def __init__(self, sequence, name='', prefix='StrandOrder_', memorycheck=True):
+
+        # Assign name
+        if name:
+            self._name = name
+        else:
+            if prefix == '':
+                raise DSDObjectsError('DSD_StrandOrder prefix must not be empty!')
+            if prefix[-1].isdigit():
+                raise DSDObjectsError('DSD_StrandOrder prefix must not end with a digit!')
+            self._name = prefix + str(DSD_StrandOrder.ID)
+            DSD_StrandOrder.ID += 1
+
+        # should remain in same order as initialized
+        self._sequence = sequence
+        self._canonical_form = None
+        self._rotations = None
+        self._lol_sequence = None
+
+        # Initialized on demand:
+        self._strand_lengths = None
+        self._strands = None
+        self._domains = None
+
+        # rotate strands into a canonical form.
+        # two complexes are equal if they have equal canonial form
+        self._memorycheck = memorycheck
+        if self._memorycheck:
+            canon = self.canonical_form # raises duplication error
+            if self._name not in DSD_StrandOrder.NAMES:
+                DSD_StrandOrder.NAMES[self._name] = canon
+            else :
+                raise DSDObjectsError('Duplicate DSD_StrandOrder name!', self._name)
+            DSD_StrandOrder.MEMORY[self.canonical_form] = self
+
+    @property
+    def canonical_form(self):
+        """ Sort Sequences in a unique way for each complex.
+        """
+        if not self._canonical_form:
+            all_variants = dict()
+            if not self._lol_sequence:
+                self._lol_sequence = utils.make_lol_sequence(self._sequence)
+            for e in range(0,len(self._lol_sequence)):
+                canon = tuple(map(lambda x: tuple(map(str, x)), 
+                    self._lol_sequence[e:] + self._lol_sequence[:e]))
+                if canon not in all_variants:
+                    all_variants[canon] = e
+                    if self._memorycheck:
+                        self.do_memorycheck(canon, e)
+            self._canonical_form = sorted(all_variants)[0]
+            self._rotations = abs(all_variants[self._canonical_form] - len(self))
+        return self._canonical_form
+ 
+    @property
+    def rotations(self):
+        """Cyclic permutations between representation and canonical form."""
+        return self._rotations
+
+
+    @property
+    def lol_sequence(self):
+        """ Returns sequence as a list of lists, without the '+' separator.
+        
+         Example:
+          ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
+        """
+        return utils.make_lol_sequence(self._sequence)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        if name in DSD_StrandOrder.NAMES:
+            raise DSDObjectsError('Duplicate DSD_StrandOrder name!', name)
+        if self._name in DSD_StrandOrder.NAMES:
+            del DSD_StrandOrder.NAMES[self._name]
+        self._name = name
+        DSD_StrandOrder.NAMES[self._name] = self.canonical_form
+
+    @property
+    def sequence(self):
+        """list: sequence the complex object. """
+        return self._sequence[:]
+
+    def __len__(self):
+        return len(self._lol_sequence)
+
+    @property
+    def kernel_string(self):
+        """str: print sequence and structure in `kernel` notation. """
+        return "{}".format(" ".join(map(str,self._sequence)))
+
+    def do_memorycheck(self, current = None, rotations=None):
+        if current is None: 
+            current = self.canonical_form 
+
+        if current in DSD_StrandOrder.MEMORY:
+            other = DSD_StrandOrder.MEMORY[current]
+            error = DSDDuplicationError('Duplicate DSD_StrandOrder specification:', 
+                    current)
+            error.existing = other
+            error.rotations = abs(rotations - len(self)) - other._rotations
+            raise error
+
+    def __repr__(self):
+        return 'StrandOrder({}: {})'.format(self.name, ' '.join(map(str, self.sequence)))

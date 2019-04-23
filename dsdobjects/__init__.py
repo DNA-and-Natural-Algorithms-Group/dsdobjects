@@ -11,4 +11,5 @@ __version__='0.6.3'
 from dsdobjects.base_classes import clear_memory
 from dsdobjects.base_classes import DSDObjectsError, DSDDuplicationError 
 from dsdobjects.base_classes import DL_Domain, SL_Domain, DSD_Complex, DSD_RestingSet, DSD_Reaction
+from dsdobjects.base_classes import DSD_StrandOrder
 
