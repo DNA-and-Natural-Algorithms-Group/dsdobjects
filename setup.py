@@ -26,9 +26,10 @@ setup(
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         ],
     install_requires=['future'],
-    packages=['dsdobjects', 'dsdobjects.parser'],
+    packages=['dsdobjects', 'dsdobjects.parser', 'dsdobjects.prototypes'],
     test_suite='tests',
 )
 
