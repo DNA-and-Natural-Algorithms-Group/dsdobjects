@@ -406,7 +406,7 @@ class DSD_ReactionTest(unittest.TestCase):
         self.assertEqual('B + A -> B + B', str(x))
  
 @unittest.skipIf(SKIP, "skipping tests")
-class DSD_ReactionSetTest(unittest.TestCase):
+class DSD_Macrostate(unittest.TestCase):
     def setUp(self):
         pass
 
@@ -414,13 +414,10 @@ class DSD_ReactionSetTest(unittest.TestCase):
         bc.clear_memory()
 
     def test_initialize(self):
-        #with self.assertRaises(bc.DSDObjectsError):
-        #    x = bc.DSD_Reaction(['A','B','C'],['D','A','E'], rtype = 'branch-3way')
-
         A = bc.DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
         B = bc.DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
 
-        x = bc.DSD_RestingSet([A, B], representative=B)
+        x = bc.DSD_Macrostate([A, B], representative=B)
         self.assertEqual(x.canonical, B)
         
 @unittest.skipIf(SKIP, "skipping tests")

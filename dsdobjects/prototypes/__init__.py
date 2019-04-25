@@ -6,5 +6,6 @@
 # Distributed under the MIT License, use at your own risk.
 #
 
-from dsdobjects.prototypes.prototypes import LogicDomain, Domain, Complex, RestingSet, Reaction
+from dsdobjects.prototypes.prototypes import LogicDomain, Domain, Complex, Macrostate, Reaction, StrandOrder, read_pil
+
 

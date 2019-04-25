@@ -293,8 +293,8 @@ def clear_memory():
     DSD_Complex.MEMORY = dict()
     DSD_Complex.NAMES = dict()
     DSD_Complex.ID = 0
-    DSD_RestingSet.NAMES = dict()
-    DSD_RestingSet.MEMORY = dict()
+    DSD_Macrostate.NAMES = dict()
+    DSD_Macrostate.MEMORY = dict()
     DSD_Reaction.MEMORY = dict()
 
 class ABC_Domain(object):
@@ -378,7 +378,7 @@ class DL_Domain(ABC_Domain):
 
     Raises:
         DSDDuplicationError: "Duplicate DL_Domain specification."
-        DSDObjectsError: "Conflictiong assignments of dtype and length."
+        DSDObjectsError: "Conflicting assignments of dtype and length."
         DSDObjectsError: "DL_Domain instance requires dtype and/or length"
 
     Class Variables:
@@ -415,7 +415,7 @@ class DL_Domain(ABC_Domain):
         if dtype and length :
             if not (dtype == 'short') == (length <= DL_Domain.DTYPE_CUTOFF):
                 del DL_Domain.MEMORY[name]
-                raise DSDObjectsError('Conflictiong assignments of dtype and length')
+                raise DSDObjectsError('Conflicting assignments of dtype and length')
         elif dtype :
             length = DL_Domain.SHORT_DOM_LEN if dtype == 'short' else DL_Domain.LONG_DOM_LEN
         elif length :
@@ -454,6 +454,9 @@ class DL_Domain(ABC_Domain):
     @property
     def dtype(self):
         return self._dtype
+
+    def __repr__(self):
+        return 'DL_Domain({}, {}, {})'.format(self._name, self._dtype, self._length)
 
     def __key__(self):
         return self.name
@@ -536,7 +539,6 @@ class SL_Domain(ABC_Domain):
     @sequence.setter
     def sequence(self, value):
         raise NotImplementedError
-        #self._sequence = self.enforce_constraints(value)
 
     def enforce_constraints(self, constraint):
         """As for now, constraints are only on sequence length. """
@@ -564,13 +566,11 @@ class SL_Domain(ABC_Domain):
     def length(self):
         return len(self._sequence)
 
-    #def __invert__(self):
-    #    """ Domains are equal if their dtypes are equal.
-    #    """
-    #    return ~self._dtype
-
     def __key__(self):
         return self.name
+
+    def __repr__(self):
+        return 'SL_Domain({}, {}, {})'.format(self._name, self._dtype, self._sequence)
 
     def is_logic(self, other):
         """ Domains are logically equivalent if their dtypes are equal.
@@ -603,7 +603,6 @@ class SL_Domain(ABC_Domain):
 
     def __hash__(self):
         return hash(self.__key__())
-
 
 class DSD_Complex(object):
     """A sequence and structure pair.
@@ -970,6 +969,9 @@ class DSD_Complex(object):
                 return False
         return True
 
+    def __repr__(self):
+        return 'DSD_Complex({}, {})'.format(self.name, self.canonical_form)
+
     def __eq__(self, other):
         """ Test if two complexes are equal.
 
@@ -1010,8 +1012,7 @@ class DSD_Complex(object):
     def __hash__(self):
         return hash(self.canonical_form)
 
-# TODO: Rename to DSD_Macrostate(object)?
-class DSD_RestingSet(object):
+class DSD_Macrostate(object):
     """
     A set of complexes.
     """
@@ -1040,23 +1041,23 @@ class DSD_RestingSet(object):
 
         # two complexes are equal if they have equal canonial form
         if memorycheck :
-            if self.canonical_form in DSD_RestingSet.MEMORY:
-                other = DSD_RestingSet.MEMORY[self.canonical_form]
+            if self.canonical_form in DSD_Macrostate.MEMORY:
+                other = DSD_Macrostate.MEMORY[self.canonical_form]
                 if other != self :
-                    error = DSDObjectsError('Conflicting RestingSet Assignment:', other)
+                    error = DSDObjectsError('Conflicting Macrostate Assignment:', other)
                     error.existing = other
                     raise error
                 else :
-                    error = DSDDuplicationError('Duplicate RestingSet specification:', 
+                    error = DSDDuplicationError('Duplicate Macrostate specification:', 
                             self, other)
                     error.existing = other
                     raise error
-            elif self._name in DSD_RestingSet.NAMES:
-                raise DSDObjectsError('Duplicate RestingSet name!', self._name)
+            elif self._name in DSD_Macrostate.NAMES:
+                raise DSDObjectsError('Duplicate Macrostate name!', self._name)
             else :
                 for canon in map(lambda x: x.canonical_form, self._complexes):
-                    DSD_RestingSet.MEMORY[canon] = self
-                DSD_RestingSet.NAMES[self._name] = self.canonical_form
+                    DSD_Macrostate.MEMORY[canon] = self
+                DSD_Macrostate.NAMES[self._name] = self.canonical_form
 
 
     @property
@@ -1106,16 +1107,16 @@ class DSD_RestingSet(object):
         return not (self == other)
 
     def __repr__(self):
-        return "RestingSet(\"%s\", %s)" % (self.name, str(self.complexes))
+        return "DSD_Macrostate(\"%s\", %s)" % (self.name, str(self.complexes))
 
 class DSD_Reaction(object):
     """ A reaction pathway.
 
     Args:
       reactants (list): A list of reactants. Reactants can be 
-        :obj:`DSD_RestingSet()` or :obj:`DSD_Complex()` objects.
+        :obj:`DSD_Macrostate()` or :obj:`DSD_Complex()` objects.
       products (list): A list of products. Products can be
-        :obj:`DSD_RestingSet()` or :obj:`DSD_Complex()` objects.
+        :obj:`DSD_Macrostate()` or :obj:`DSD_Complex()` objects.
       rtype (str, optional): Reaction type, e.g. bind21, condensed, .. Defaults to None.
       rate (flt, optional): Reaction rate. A reaction rate 
 
@@ -1126,8 +1127,9 @@ class DSD_Reaction(object):
     Rate = namedtuple('rate', 'constant units')
 
     def __init__(self, reactants, products, rtype=None, rate=None, memorycheck=True):
-        if not(all(isinstance(c, (DSD_Complex, DSD_RestingSet)) for c in reactants + products)):
-                    raise DSDObjectsError('recatants and products must be an instance of DSD_Complex')
+        if not(all(isinstance(c, 
+            (DSD_Complex, DSD_Macrostate)) for c in reactants + products)):
+            raise DSDObjectsError('Reactants and products must be DSD Objects')
         self._reactants = reactants
         self._products = products
         self._rtype = rtype
@@ -1360,4 +1362,13 @@ class DSD_StrandOrder(object):
             raise error
 
     def __repr__(self):
-        return 'StrandOrder({}: {})'.format(self.name, ' '.join(map(str, self.sequence)))
+        return 'DSD_StrandOrder({}: {})'.format(self.name, ' '.join(map(str, self.sequence)))
+
+
+
+# Deprecated
+class DSD_RestingSet(DSD_Macrostate):
+    def __init__(self, *kargs, **kwargs):
+        print("DEPRECATION WARNING: DSD_RestingSet is now called DSD_Macrostate.")
+        super(DSD_RestingSet, self).__init__(*kargs, **kwargs)
+

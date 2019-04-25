@@ -9,9 +9,10 @@
 #
 
 from dsdobjects import clear_memory
-from dsdobjects import DL_Domain, SL_Domain, DSD_Complex, DSD_Reaction, DSD_RestingSet, DSD_StrandOrder
+from dsdobjects import DL_Domain, SL_Domain, DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
 from dsdobjects import DSDObjectsError, DSDDuplicationError
-from dsdobjects.utils import split_complex
+from dsdobjects.utils import split_complex, resolve_loops
+from dsdobjects.parser import parse_pil_string, parse_pil_file, PilFormatError
 
 class LogicDomain(DL_Domain):
     """
@@ -87,17 +88,6 @@ class Domain(SL_Domain):
 
     def __init__(self, *kargs, **kwargs):
         super(Domain, self).__init__(*kargs, **kwargs)
-
-    #@property
-    #def complement(self):
-    #    # If we initialize the complement, we need to know the class.
-    #    if self._complement is None:
-    #        cname = self._name[:-1] if self.is_complement else self._name + '*'
-    #        if cname in DL_Domain.MEMORY:
-    #            self._complement = DL_Domain.MEMORY[cname]
-    #        else :
-    #            self._complement = LogicDomain(cname, self.dtype, self.length)
-    #    return self._complement
     
     @property
     def complement(self):
@@ -139,30 +129,11 @@ class Complex(DSD_Complex):
         self.concentration = None # e.g. (initial, 5, nM)
         assert self.is_domainlevel_complement
 
-    @property
-    def pair_table(self):
-        return super(Complex, self).pair_table
-    
-    @pair_table.setter
-    def pair_table(self, pt):
-        self._pair_table = pt
-
-    def full_string(self):
-        return "Complex(%s): %s %s" % (
-            self.name, str(self.strands), str(self.structure))
-
-    def get_structure(self, loc):
-        return self.get_paired_loc(loc)
-
-    def triple(self, *loc):
-        # overwrite standard func
-        return (self.get_domain(loc), self.get_paired_loc(loc), loc)
-
     def get_strand(self, loc):
         """
         Returns the strand at the given index in this complex
         """
-        if(loc is not None):
+        if loc is not None :
             return self._strands[loc]
         return None
 
@@ -179,9 +150,6 @@ class Complex(DSD_Complex):
         for (x,y) in self.enclosed_domains:
             pd.append((self.get_domain((x,y)), x, y))
         return pd
-
-    def rotate_location(self, loc, n=None):
-        return self.rotate_pairtable_loc(loc, n)
 
     def split(self):
         """ Split Complex into disconneted components.
@@ -207,9 +175,9 @@ class Complex(DSD_Complex):
         """
         return cmp(self.canonical_form, other.canonical_form)
 
-class RestingSet(DSD_RestingSet):
+class Macrostate(DSD_Macrostate):
     def __init__(self, *kargs, **kwargs):
-        super(RestingSet, self).__init__(*kargs, **kwargs)
+        super(Macrostate, self).__init__(*kargs, **kwargs)
 
     def __str__(self):
         return self.name
@@ -238,41 +206,15 @@ class Reaction(DSD_Reaction):
         """Prints the reaction in PIL format.
         Reaction objects *always* specify rate in /M and /s.  """
 
-        def format_rate_units(rate):
-            if time == 's':
-                pass
-            elif time == 'm':
-                rate *= 60
-            elif time == 'h':
-                rate *= 3600
-            else :
-                raise NotImplementedError
-        
-            if molarity == 'M':
-                pass
-            elif molarity == 'mM':
-                if self.arity[0] > 1:
-                    factor = self.arity[0] - 1
-                    rate /= (factor * 1e3)
-            elif molarity == 'uM':
-                if self.arity[0] > 1:
-                    factor = self.arity[0] - 1
-                    rate /= (factor * 1e6)
-            elif molarity == 'nM':
-                if self.arity[0] > 1:
-                    factor = self.arity[0] - 1
-                    rate /= (factor * 1e9)
-            elif molarity == 'pM':
-                if self.arity[0] > 1:
-                    factor = self.arity[0] - 1
-                    rate /= (factor * 1e12)
-            else :
-                raise NotImplementedError
-
-            return rate
-
-        rate = format_rate_units(self.rate) if self.rate else float('nan')
-        units = "/{}".format(molarity) * (self.arity[0] - 1) + "/{}".format(time)
+        if self.rate :
+            newunits = [molarity] * (self.arity[0] - 1) + [time]
+            newrate = self.rateformat(newunits)
+            rate = newrate.constant
+            assert newunits == newrate.units
+            units = ''.join(map('/{}'.format, newrate.units))
+        else :
+            rate = float('nan')
+            units = ''
 
         if self.rtype :
             return '[{:14s} = {:12g} {:4s} ] {} -> {}'.format(self.rtype, rate, units,
@@ -287,22 +229,16 @@ class Reaction(DSD_Reaction):
 
         Needs thorough testing!
 
+        Note: It seems like we can only do that if either len(reactants) == 1 or
+        len(products)==1. Only then we have sufficient constraints on the strand
+        order. For example, a reaction of strands: VXY + Z -> ... -> YZ + VX we
+        might chose VXYZ for the strand order, even though the intermediate has
+        VXZY.
+
         Returns:
             StrandOrder, pairtable-reactants, pairtable-products.
 
         """
-        # find a common pairtable representation for input and output
-
-        # get the StrandOrder of inputs and the StrandOrder of outputs
-        # e.g.:
-        #   (sX + sY) + sZ => (sY + sZ) + sX
-        # we know that all intermediates must be PK free, does that guarantee that such an order exists?
-        #
-        #   (X+Y) + Z => (XZY) => (ZY) + X => YZ + X
-
-        # If len(reactants) == 1 or len(products)==1, then we have the strand order.
-        # else it can be very complicated..., but frankly, we just have to try...
-
         so = None  # The common strand order.
         pt1 = None # Pair table of reactants
         pt2 = None # Pair table of products
@@ -310,7 +246,7 @@ class Reaction(DSD_Reaction):
         rotations = 0
         if len(self.reactants) == 1:
             cplx = self.reactants[0]
-            if isinstance(cplx, RestingSet):
+            if isinstance(cplx, Macrostate):
                 cplx = cplx.canonical
             try:
                 so = StrandOrder(cplx.sequence, prefix='so_')
@@ -327,7 +263,7 @@ class Reaction(DSD_Reaction):
 
         elif len(self.products) == 1:
             cplx = self.products[0]
-            if isinstance(cplx, RestingSet):
+            if isinstance(cplx, Macrostate):
                 cplx = cplx.canonical
             try:
                 so = StrandOrder(cplx.sequence, prefix='so_')
@@ -350,21 +286,23 @@ class Reaction(DSD_Reaction):
         # complexes = get_complexes_from_other_side()
         cxs = self.reactants if pt2 else self.products
 
-        if any(map(lambda c: isinstance(c, RestingSet), cxs)):
+        if any(map(lambda c: isinstance(c, Macrostate), cxs)):
             cxs = list(map(lambda x: x.canonical, cxs))
 
-        assert len(cxs) == 2
+        assert len(cxs) == 2 # or better <= ?
+
         for rot1 in cxs[0].rotate():
             for rot2 in cxs[1].rotate():
                 rotations = None
                 try:
                     so2 = StrandOrder(rot1.sequence + ['+'] + rot2.sequence)
-                    #rotations = so2.rotations
                 except DSDDuplicationError as e : 
                     so2 = e.existing
                     rotations = e.rotations
                 if so == so2:
-                    fake = Complex(rot1.sequence + ['+'] + rot2.sequence, rot1.structure + ['+'] + rot2.structure)
+                    fake = Complex(rot1.sequence + ['+'] + rot2.sequence,
+                                   rot1.structure + ['+'] + rot2.structure, 
+                                   memorycheck=False)
                     if rotations:
                         for x in range(len(so)-rotations):
                             fake = fake.rotate_once()
@@ -377,16 +315,152 @@ class Reaction(DSD_Reaction):
 class StrandOrder(DSD_StrandOrder):
     pass
 
-    #def __new__(cls, sequence, name='', prefix='StrandOrder_', memorycheck=True):
-    #    # The new method returns the present instance of an object, if it exists
-    #    self = DSD_StrandOrder.__new__(cls)
-    #    try:
-    #        super(StrandOrder, self).__init__(sequence, name, prefix, memorycheck)
-    #    except DSDDuplicationError as e :
-    #        return e.existing
-    #    return self
+# ---- Load prototype objects ---- #
+def read_reaction(line):
+    rtype = line[1][0][0] if line[1] != [] and line[1][0] != [] else None
+    rate = float(line[1][1][0]) if line[1] != [] and line[1][1] != [] else None
+    error = float(line[1][1][1]) if line[1] != [] and line[1][1] != [] and len(line[1][1]) == 2 else None
+    units = line[1][2][0] if line[1] != [] and line[1][2] != [] else None
 
-    #def __init__(self, sequence, name='', prefix='StrandOrder_', memorycheck=True):
-    #    # Remove default initialziation to get __new__ to work
-    #    pass
+    if rate is None:
+        r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
+        logging.warning("Ignoring input reaction without a rate: {}".format(r))
+        return None, None, None, None, None, None
+    elif rtype is None or rtype not in Reaction.RTYPES:
+        r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
+        logging.warning("Ignoring input reaction of with rtype='{}': {}".format(rtype, r))
+        return None, None, None, None, None, None
+    else :
+        r = "[{} = {:12g} {}] {} -> {}".format(
+                rtype, rate, units, ' + '.join(line[2]), ' + '.join(line[3]))
+
+    return line[2], line[3], rtype, rate, units, r
+
+def read_pil(data, is_file = False):
+    """ Read PIL file format.
+
+    Use dsdobjects parser to extract information. Load kinda.objects.
+
+    Args:
+        data (str): Is either the PIL file in string format or the path to a file.
+        is_file (bool): True if data is a path to a file, False otherwise
+    """
+    parsed_file = parse_pil_file(data) if is_file else parse_pil_string(data)
+
+    dl_domains = {'+' : '+'} # saves some code
+    sl_domains = {'+' : '+'} # saves some code
+
+    # For now:
+    #    - always assign domain and complement together...
+    #    - do not update constraints, but assume they are correct...
+    def assgn_dl_domain(name, dt, dl):
+        if name not in dl_domains:
+            dl_domains[name] = LogicDomain(name, dtype = dt, length = dl)
+            cname = name[:-1] if dl_domains[name].is_complement else name + '*'
+            dl_domains[cname] = ~dl_domains[name]
+        return dl_domains[name]
+
+    def assgn_sl_domain(dtype, sequence, variant=None):
+        if variant is None:
+            name = dtype.name
+        else: 
+            raise NotImplementedError
+
+        assert name in dl_domains
+
+        if name not in sl_domains:
+            sl_domains[name] = Domain(dtype, sequence)
+            cname = name[:-1] if dl_domains[name].is_complement else name + '*'
+            sl_domains[cname] = ~sl_domains[name]
+        return sl_domains[name]
+
+    complexes = {}
+    resting = {}
+    con_reactions = []
+    det_reactions = []
+
+    for line in parsed_file :
+        name = line[1]
+        if line[0] == 'dl-domain':
+            if line[2] == 'short':
+                (dtype, dlen) = ('short', None)
+            elif line[2] == 'long':
+                (dtype, dlen) = ('long', None)
+            else :
+                (dtype, dlen) = (None, int(line[2]))
+
+            if name not in sl_domains:
+                dldom = assgn_dl_domain(name, dtype, dlen)
+                sldom = assgn_sl_domain(dldom, sequence = 'N'*dlen)
+            #print('Domain {} with sequence {}'.format(name, sldom.sequence))
+
+        elif line[0] == 'sl-domain':
+            if len(line) == 4:
+                if int(line[3]) != len(line[2]):
+                    raise PilFormatError("Sequence/Length information inconsistent {} vs ().".format(line[3], len(line[2])))
+
+            if name not in sl_domains:
+                dldom = assgn_dl_domain(name, dt=None, dl=int(line[3]))
+                sldom = assgn_sl_domain(dldom, sequence = line[2])
+            else:
+                assert sl_domains[name].sequence == line[2]
+            #print('Domain {} with sequence {}'.format(name, sldom.sequence))
+
+
+        elif line[0] == 'composite-domain':
+            pass
+
+        elif line[0] == 'strand-complex':
+            pass
+ 
+        elif line[0] == 'kernel-complex':
+            sequence, structure = resolve_loops(line[2])
+
+            try : # to replace names with domain objects.
+                sequence = list(map(lambda d : sl_domains[d], sequence))
+            except KeyError as err:
+                raise PilFormatError("Cannot find domain: {}.".format(d))
+            
+            complexes[name] = Complex(sequence, structure, name=name)
+
+            if len(line) > 3 :
+                assert len(line[3]) == 3
+                complexes[name]._concentration = tuple(line[3])
+
+        elif line[0] == 'resting-macrostate':
+            try: # to replace names with complex objects.
+                cplxs = list(map(lambda c : complexes[c], line[2]))
+            except KeyError as err:
+                raise PilFormatError("Cannot find complex: {}.".format(c))
+            resting[name] = Macrostate(name = name, complexes = cplxs)
+
+        elif line[0] == 'reaction':
+            reactants, products, rtype, rate, units, r = read_reaction(line)
+
+            if rtype == 'condensed' :
+                try:
+                    reactants = list(map(lambda c : resting[c], line[2]))
+                    products  = list(map(lambda c : resting[c], line[3]))
+                except KeyError as err:
+                    raise PilFormatError("Cannot find resting complex: {}.".format(c))
+                rxn = Reaction(reactants, products, rtype, rate)
+                con_reactions.append(rxn)
+            else :
+                try:
+                    reactants = list(map(lambda c : complexes[c], reactants))
+                    products  = list(map(lambda c : complexes[c], products))
+                except KeyError as err:
+                    raise PilFormatError("Cannot find complex: {}.".format(c))
+
+                rxn = Reaction(reactants, products, rtype, rate)
+                det_reactions.append(rxn)
+
+            if rxn.rateunits != units:
+                raise SystemExit("Rate units must be given in {}, not: {}.".format(reaction.rateunits, units))
+
+        else :
+            print('# Ignoring keyword: {}'.format(line[0]))
+
+    return sl_domains, complexes, resting, det_reactions, con_reactions
+
 
