@@ -116,12 +116,12 @@ $ python ./setup.py install --user
 
 ## Version
 0.7 -- Python 3.x support / prototypes
-    * basic support of prototype objects
-    * added StrandOrder base_class and prototpye
-    * allow parsing of infinite error bars for reaction rates
-    * DSD_Restingset renamed to DSD_Macrostate
-    * broken backward compatibility:
-        reaction rates are now named tuples
+  * basic support of prototype objects
+  * added StrandOrder base_class and prototpye
+  * allow parsing of infinite error bars for reaction rates
+  * DSD_Restingset renamed to DSD_Macrostate
+  * broken backward compatibility:
+      reaction rates are now namedtuples
 
 0.6.3 -- added parser for seesaw language
 
