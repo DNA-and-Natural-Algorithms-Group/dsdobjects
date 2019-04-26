@@ -122,6 +122,7 @@ class UtilityTests(unittest.TestCase):
         se = list('CCCT+TTGGG')
         ss = list('(((.+..)))')
         ps = utils.make_lol_sequence(se)
+        self.assertEqual(ps, [['C', 'C', 'C', 'T'], ['T', 'T', 'G', 'G', 'G']])
         pt = utils.make_pair_table(ss)
         exp = [(se,ss)]
         self.assertEqual(utils.split_complex(ps, pt), exp)
@@ -129,6 +130,7 @@ class UtilityTests(unittest.TestCase):
         se = list('CCCT+AAA+TTGGG')
         ss = list('(((.+...+..)))')
         ps = utils.make_lol_sequence(se)
+        self.assertEqual(ps, [['C', 'C', 'C', 'T'], ['A', 'A', 'A'], ['T', 'T', 'G', 'G', 'G']])
         pt = utils.make_pair_table(ss)
         exp = [(list('CCCT+TTGGG'),list('(((.+..)))')),(list('AAA'),list('...'))]
         self.assertEqual(sorted(utils.split_complex(ps, pt)), sorted(exp))

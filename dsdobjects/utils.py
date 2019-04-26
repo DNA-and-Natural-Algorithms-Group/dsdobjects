@@ -91,10 +91,12 @@ def make_pair_table(ss, strand_break='+', ignore=set('.')):
 
 def pair_table_to_dot_bracket(pt, strand_break='+'):
     """
+    Inverse of the make_pair_table function.
     """
     assert len(strand_break) == 1
     out = []
     for si, strand in enumerate(pt):
+        if out: out.append(strand_break)
         for di, pair in enumerate(strand):
             if pair is None:
                 out.append('.')
@@ -104,9 +106,7 @@ def pair_table_to_dot_bracket(pt, strand_break='+'):
                     out.append('(')
                 else :
                     out.append(')')
-        out.append(strand_break)
-    
-    return out[:-1] #remove last '+'
+    return out
 
 def make_lol_sequence(seq):
     indices = [-1] + [i for i, x in enumerate(seq) if x == "+"]
@@ -117,6 +117,10 @@ def make_loop_index(ptable):
     """
     number loops and assign each position its loop-number
     handy for checking which pairs can be added
+
+    Returns:
+        * A list of lists with the loop index for every nucleotide
+        * A set of loop indices that correspond to exterior loops.
     """
     loop_index = []
     exterior = set()
@@ -153,9 +157,6 @@ def make_loop_index(ptable):
 
 def split_complex(lol_seq, ptable):
     """
-    number loops and assign each position its loop-number
-    handy for checking which pairs can be added
-
     NOTE: modifies its arguments!
     """
     loop_index = []
@@ -223,7 +224,8 @@ def split_complex(lol_seq, ptable):
     return parts
 
 def resolve_loops(loop):
-    """ Return a sequence, structure pair from kernel format with parenthesis. """
+    """ Return a sequence, structure pair from kernel format.
+    """
     sequen = []
     struct = []
     for dom in loop :
