@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Parser module for Seesaw Compiler specification of DSD cirucits.
 # http://www.qianlab.caltech.edu/SeesawCompiler/

@@ -1,5 +1,5 @@
 #
-# dsdobjects.utils
+# dsdobjects/utils.py
 #   - copy and/or modify together with tests/test_utils.py
 #
 # Written by Stefan Badelt (badelt@caltech.edu)

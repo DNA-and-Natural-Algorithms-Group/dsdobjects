@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # dsdobjects.parser.pil_extended_format
 #   - copy and/or modify together with tests/test_pil_parser.py

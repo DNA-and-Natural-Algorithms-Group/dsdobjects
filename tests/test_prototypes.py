@@ -1,6 +1,6 @@
 import unittest
 
-from dsdobjects.prototypes import LogicDomain, Domain, Complex, Reaction, Macrostate, StrandOrder, read_pil
+from dsdobjects import LogicDomain, Domain, Complex, Reaction, Macrostate, StrandOrder, read_pil
 
 SKIP = False
 

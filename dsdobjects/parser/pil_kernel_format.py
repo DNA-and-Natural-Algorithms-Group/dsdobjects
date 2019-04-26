@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # dsdobjects.parser.pil_kernel_format
 #   - copy and/or modify together with tests/test_kernel_parser.py

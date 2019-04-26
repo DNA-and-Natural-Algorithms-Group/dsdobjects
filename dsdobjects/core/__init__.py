@@ -1,5 +1,5 @@
 #
-# dsdobjects
+# dsdobjects.core
 #
 # Written by Stefan Badelt (badelt@caltech.edu)
 #
@@ -7,14 +7,6 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-__version__='0.7'
-
-from dsdobjects.prototypes import read_pil
-from dsdobjects.prototypes import SequenceConstraint
-from dsdobjects.prototypes import LogicDomain, Domain, Complex
-from dsdobjects.prototypes import Macrostate, Reaction, StrandOrder
-
-# DEPRECATED - use dsdobjects.core instead
 from dsdobjects.core.base_classes import clear_memory
 from dsdobjects.core.base_classes import DSDObjectsError, DSDDuplicationError 
 
@@ -24,4 +16,3 @@ from dsdobjects.core.base_classes import DSD_StrandOrder
 from dsdobjects.core.base_classes import DSD_Complex, DSD_Macrostate
 from dsdobjects.core.base_classes import DSD_Reaction
 
-from dsdobjects.core.base_classes import DSD_RestingSet

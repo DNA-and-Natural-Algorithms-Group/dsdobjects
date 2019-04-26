@@ -1,120 +1,108 @@
-# dsdobjects - classes / prototypes for DSD design
-This module provides standardized Python classes for domain-level strand
-displacement programming:
+# dsdobjects: an object library for DSD programming
 
-- SequenceConstraint
-- DL_Domain
-- SL_Domain
-- DSD_Complex
-- DSD_Reaction
-- DSD_Macrostate
-- DSD_StrandOrder
+This Python module provides a library of protype objects and base classes for
+domain-level strand displacement (DSD) programming. There are two types of
+usage: 
+ 1) ready-to-go prototype objects, 
+ 2) tweak-em-yourself core objects.
 
-Using the available prototype classes provides a quick but standardized way to
-write new algorithms for DSD programming. Alternatively, inheritance from
-dsdobjects.base_classes provides only basic functions such as '~', '==', '!=',
-and access to the built-in memory management for each class. Some potential
-ambiguities, such as requesting the complement of a Domain,  or the length of a
-complex must be defined upon inheritance.
+If you start with a new project, you want to use the prototypes. These are
+out-of-the box functional classes that can be initialized, for example, using
+various standards of the text file format *.pil. 
 
-## Quick Start with object prototypes.
-
-```py
-from dsdobjects import DL_Domain as LogicDomain
-from dsdobjects import DSD_Complex as Complex
-
-# Define a few toy domains:
-a = LogicDomain('a', dtype='long')
-b = LogicDomain('b', dtype='long', length=9)
-t = LogicDomain('t', dtype='short', length=6)
-
-# DL_Domains have always only one complement, it can be 
-# initialized and/or accessed using the __invert__ operator.
-assert (a is ~(~a))
-
-
-# Use the Domains to define a Complex:
->>> cplx = Complex([a, b, c, ~b, '+', ~a], list('((.)+)'), name='rudolf')
-cplx.kernel_string
-cplx.canonical_form
-cplx.size
-for r in cplx.rotate():
-    print r.kernel_string
-cplx.pair_table
-
-# Define a two disconnected Complexes... 
-cplx = Complex([a, b, c, ~b, '+', ~a], list('.(.)+.'), name='cplx')
-cx1, cx2 = cplx.split()
-
-
-from dsdobjects import SequenceConstraint as Sequence
-from dsdobjects import SL_Domain as SequenceDomain
-
-seq1 = Sequence('ACGTNNGT', molecule='DNA')
-seq2 = Sequence('HHHHHHHH', molecule='DNA')
-seq3 = seq1 + seq2
-seq1.add_constraint('HHHHHHHH')
-print seq1.constraint
-print seq1.complement
-print seq1.wc_complement
-print seq1.reverse_complement
-print seq1.reverse_wc_complement
-
-seq1c = seq1.wc_complement
+## Installation
+To install this library use pip:
 ```
-
-
-```py
-from dsdobjects import DL_Domain
-
-# A personalized domain that extends the DL_Domain base class.
-class MyDomain(DL_Domain):
-
-    def __init__(self, name, dtype=None, length=None):
-        super(MyDomain, self).__init__(name, dtype, length)
- 
-    @property
-    def complement(self):
-        # Automatically initialize or return the complementary domain.
-        if self._complement is None:
-            cname = self._name[:-1] if self.is_complement else self._name + '*'
-            if cname in DL_Domain.MEMORY:
-                self._complement = DL_Domain.MEMORY[cname]
-            else :
-                self._complement = MyDomain(cname, self.dtype, self.length)
-        return self._complement
-
+$ pip install dsdobjects
 ```
-
-Inheriting from the DL_Domain base class enables standardized built in
-functions such as '~', '==', '!=', and provides a built-in memory management
-raising the DSDDuplicationError when conflicting domain names are chosen.
-
-
-```py
->>> # Initialize a Domain.
->>> x = MyDomain('hello', dtype='short')
->>> # The '~' operator calls x.complement
->>> y = ~x
->>> (y == ~x)
-True
-
-```
-
-These and many more functionalities and sanity checks are also available for
-other objects. See the respective docstrings for details.  
-
-## Install
-To install this library, use the following command in the root directory:
+or the following command in the root directory:
 ```
 $ python ./setup.py install
 ```
-or use local installation:
+
+
+### Quick Start with object prototypes.
+```py
+from dsdobjects import SequenceConstraint, StrandOrder, LogicDomain, Domain, Complex, Macrostate
 ```
-$ python ./setup.py install --user
+
+```py
+ # Define a few toy domains:
+ a = LogicDomain('a', dtype='long')
+ b = LogicDomain('b', dtype='long', length=9)
+ t = LogicDomain('t', dtype='short', length=6)
+ 
+ # LogicDomains have exactly one complement, it can be initialized 
+ # and/or accessed using the __invert__ operator. The built-in 
+ # memory management ensures that there is only one object for each domain.
+ assert (a is ~(~a))
+ 
+ # Use the Domains to define a Complex ...
+ cplx = Complex([a, b, c, ~b, '+', ~a], list('((.)+)'), name='rudolf')
+
+ # ... and test some of the built-in complex properties:
+ cplx.kernel_string
+ cplx.canonical_form
+ cplx.size
+ for r in cplx.rotate():
+     print r.kernel_string
+ cplx.pair_table
+ 
+ # If you were to define two complexes as one disconnected complex ... 
+ cplx = Complex([a, b, c, ~b, '+', ~a], list('.(.)+.'), name='cplx')
+ assert cplx.is_connected is False
+
+ # ... you can quickly and return the indiviudal complexes:
+ cx1, cx2 = cplx.split()
+```
+
+### Quick Start with text input.
+For example load an output file from peppercorn into dsdobjects:
+
+```python
+from dsdobjects import read_pil
+
+domains, complexes, macrostates, detailed_rxns, condensed_rxns = read_pil(filename.pil)
+```
+
+## Abut the core objects.
+If prototypes are not sufficient, you can make your own objects by inheriting
+from the core objects. Core objects provide a basic set of __builtin__
+functions (e.g. equality, sorting), basic properties, memory management.  One
+way to get started is by copying the prototypes file into your project, and
+adapt it to your needs. Consider a pull request back into the main dsdobjects
+repository!
+
+
+### Quick Start with core objects.
+Inheritance from dsdobjects.base_classes provides only basic functions such as
+'~', '==', '!=', and access to the built-in memory management for each class.
+Some potential ambiguities, such as requesting the complement of a Domain,  or
+the length of a complex must be defined upon inheritance.
+
+```py
+ from dsdobjects import DL_Domain
+ 
+ # A personalized domain that extends the DL_Domain base class.
+ class MyDomain(DL_Domain):
+ 
+     def __init__(self, name, dtype=None, length=None):
+         super(MyDomain, self).__init__(name, dtype, length)
+  
+     @property
+     def complement(self):
+         # Automatically initialize or return the complementary domain.
+         if self._complement is None:
+             cname = self._name[:-1] if self.is_complement else self._name + '*'
+             if cname in DL_Domain.MEMORY:
+                 self._complement = DL_Domain.MEMORY[cname]
+             else :
+                 self._complement = MyDomain(cname, self.dtype, self.length)
+         return self._complement
 ```
 
 ## Version
+
 0.7 -- Python 3.x support / prototypes
   * basic support of prototype objects
   * added StrandOrder base_class and prototpye
@@ -156,3 +144,4 @@ MIT
 [nuskell]: <http://www.github.com/DNA-and-Natural-Algorithms-Group/nuskell>
 [peppercornenumerator]: <http://www.github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator>
 [DNA and Natural Algorithms Group]: <http://dna.caltech.edu>
+

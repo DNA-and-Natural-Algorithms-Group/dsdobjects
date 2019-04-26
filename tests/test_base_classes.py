@@ -7,7 +7,7 @@
 
 import unittest
 
-import dsdobjects.base_classes as bc
+import dsdobjects.core as bc
 
 SKIP = False
 

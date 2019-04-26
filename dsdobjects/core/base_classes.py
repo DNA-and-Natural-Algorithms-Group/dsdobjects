@@ -1,5 +1,5 @@
 #
-# dsdobjects.base_classes
+# dsdobjects/core/base_classes.py
 #   - copy and/or modify together with tests/test_base_classes.py
 #
 # Written by Stefan Badelt (badelt@caltech.edu)

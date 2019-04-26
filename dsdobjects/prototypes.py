@@ -1,16 +1,24 @@
-# python3 
 #
 # dsdobjects/prototypes.py
+#   - copy and/or modify together with tests/test_prototypes.py
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
+# Distributed under the MIT License, use at your own risk.
 #
 # Commonly useful DSD object definitions.
 #   - functionality from here may be incorporated into base_classes if generally useful.
 #   - you should be able to copy that file as is into your project if you need custom changes.
 #   - please consider providing thoughts about missing functionality
 #
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-from dsdobjects import clear_memory
-from dsdobjects import DL_Domain, SL_Domain, DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
-from dsdobjects import DSDObjectsError, DSDDuplicationError
+from dsdobjects.core import clear_memory
+from dsdobjects.core import DSDObjectsError, DSDDuplicationError
+from dsdobjects.core import SequenceConstraint
+from dsdobjects.core import DL_Domain, SL_Domain 
+from dsdobjects.core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
+
 from dsdobjects.utils import split_complex, resolve_loops
 from dsdobjects.parser import parse_pil_string, parse_pil_file, PilFormatError
 
