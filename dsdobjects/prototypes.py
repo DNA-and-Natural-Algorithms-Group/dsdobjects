@@ -11,7 +11,7 @@
 #   - you should be able to copy that file as is into your project if you need custom changes.
 #   - please consider providing thoughts about missing functionality
 #
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function
 
 from dsdobjects.core import clear_memory
 from dsdobjects.core import DSDObjectsError, DSDDuplicationError
@@ -93,9 +93,8 @@ class LogicDomain(DL_Domain):
         return self._name[-1:] == '*'
 
 class Domain(SL_Domain):
-
-    def __init__(self, *kargs, **kwargs):
-        super(Domain, self).__init__(*kargs, **kwargs)
+    def __init__(self, dtype, sequence, variant=''):
+        super(Domain, self).__init__(dtype, sequence, variant='')
     
     @property
     def complement(self):
@@ -358,10 +357,8 @@ def read_pil(data, is_file = False):
     dl_domains = {'+' : '+'} # saves some code
     sl_domains = {'+' : '+'} # saves some code
 
-    # For now:
-    #    - always assign domain and complement together...
-    #    - do not update constraints, but assume they are correct...
     def assgn_dl_domain(name, dt, dl):
+        """ Initialize both the domain and its complement. """
         if name not in dl_domains:
             dl_domains[name] = LogicDomain(name, dtype = dt, length = dl)
             cname = name[:-1] if dl_domains[name].is_complement else name + '*'
@@ -369,12 +366,14 @@ def read_pil(data, is_file = False):
         return dl_domains[name]
 
     def assgn_sl_domain(dtype, sequence, variant=None):
+        """ Initialize both the domain and its complement. 
+            Does not support variants at this point.
+        """
         if variant is None:
             name = dtype.name
+            assert name in dl_domains
         else: 
             raise NotImplementedError
-
-        assert name in dl_domains
 
         if name not in sl_domains:
             sl_domains[name] = Domain(dtype, sequence)
@@ -382,11 +381,11 @@ def read_pil(data, is_file = False):
             sl_domains[cname] = ~sl_domains[name]
         return sl_domains[name]
 
+    sequences = {} # strand order?
     complexes = {}
-    resting = {}
+    macrostates = {}
     con_reactions = []
     det_reactions = []
-
     for line in parsed_file :
         name = line[1]
         if line[0] == 'dl-domain':
@@ -400,20 +399,19 @@ def read_pil(data, is_file = False):
             if name not in sl_domains:
                 dldom = assgn_dl_domain(name, dtype, dlen)
                 sldom = assgn_sl_domain(dldom, sequence = 'N'*dlen)
-            #print('Domain {} with sequence {}'.format(name, sldom.sequence))
 
         elif line[0] == 'sl-domain':
             if len(line) == 4:
                 if int(line[3]) != len(line[2]):
-                    raise PilFormatError("Sequence/Length information inconsistent {} vs ().".format(line[3], len(line[2])))
+                    raise PilFormatError(
+                            "Sequence/Length information inconsistent {} vs ().".format(
+                                line[3], len(line[2])))
 
             if name not in sl_domains:
                 dldom = assgn_dl_domain(name, dt=None, dl=int(line[3]))
                 sldom = assgn_sl_domain(dldom, sequence = line[2])
             else:
                 assert sl_domains[name].sequence == line[2]
-            #print('Domain {} with sequence {}'.format(name, sldom.sequence))
-
 
         elif line[0] == 'composite-domain':
             pass
@@ -440,15 +438,15 @@ def read_pil(data, is_file = False):
                 cplxs = list(map(lambda c : complexes[c], line[2]))
             except KeyError as err:
                 raise PilFormatError("Cannot find complex: {}.".format(c))
-            resting[name] = Macrostate(name = name, complexes = cplxs)
+            macrostates[name] = Macrostate(name = name, complexes = cplxs)
 
         elif line[0] == 'reaction':
             reactants, products, rtype, rate, units, r = read_reaction(line)
 
             if rtype == 'condensed' :
                 try:
-                    reactants = list(map(lambda c : resting[c], line[2]))
-                    products  = list(map(lambda c : resting[c], line[3]))
+                    reactants = list(map(lambda c : macrostates[c], line[2]))
+                    products  = list(map(lambda c : macrostates[c], line[3]))
                 except KeyError as err:
                     raise PilFormatError("Cannot find resting complex: {}.".format(c))
                 rxn = Reaction(reactants, products, rtype, rate)
@@ -469,6 +467,98 @@ def read_pil(data, is_file = False):
         else :
             print('# Ignoring keyword: {}'.format(line[0]))
 
-    return sl_domains, complexes, resting, det_reactions, con_reactions
+    return sl_domains, complexes, macrostates, det_reactions, con_reactions
 
+def read_pil_line(raw):
+    line = parse_pil_string(raw)
+
+    assert len(line) == 1
+    line = line[0]
+
+    name = line[1]
+    if line[0] == 'dl-domain':
+        if line[2] == 'short':
+            (dtype, dlen) = ('short', None)
+        elif line[2] == 'long':
+            (dtype, dlen) = ('long', None)
+        else :
+            (dtype, dlen) = (None, int(line[2]))
+
+        anon = LogicDomain(name, dtype = dtype, length = dlen)
+        comp = ~anon
+        return anon
+
+    elif line[0] == 'sl-domain':
+        if len(line) == 4:
+            if int(line[3]) != len(line[2]):
+                raise PilFormatError(
+                        "Sequence/Length information inconsistent {} vs ().".format(
+                            line[3], len(line[2])))
+
+        dtype = LogicDomain(name, length = len(line[2]))
+        anon = Domain(dtype, line[2])
+        comp = ~anon
+        return anon
+ 
+    elif line[0] == 'kernel-complex':
+        sequence, structure = resolve_loops(line[2])
+        DL_Domain.MEMORY['+'] = '+'
+        SL_Domain.MEMORY['+'] = {'+': '+'}
+        try : # to replace names with domain objects.
+            sequence = list(map(lambda d : SL_Domain.MEMORY[d][d], sequence))
+        except KeyError as err:
+            sequence = list(map(lambda d : DL_Domain.MEMORY[d], sequence))
+        except KeyError as err:
+            raise PilFormatError("Cannot find domain: {}.".format(err))
+        
+        if len(line) > 3 :
+            assert len(line[3]) == 3
+            print("WARNING: Ignoring concentration.")
+
+        try:
+            return Complex(sequence, structure, name=name)
+        except DSDDuplicationError as err:
+            return err.existing
+
+
+    elif line[0] == 'resting-macrostate':
+        try: # to replace names with complex objects.
+            cplxs = list(map(lambda c : 
+                DSD_Complex.MEMORY[DSD_Complex.NAMES[c]], line[2]))
+        except KeyError as err:
+            raise PilFormatError("Cannot find complex: {}.".format(err))
+        
+        try:
+            return Macrostate(name = name, complexes = cplxs)
+        except DSDDuplicationError as err:
+            return err.existing
+
+    elif line[0] == 'reaction':
+        reactants, products, rtype, rate, units, r = read_reaction(line)
+
+        if rtype == 'condensed' :
+            try:
+                reactants = list(map(lambda c : 
+                    DSD_Macrostate.MEMORY[DSD_Macrostate.NAMES[c]], line[2]))
+                products  = list(map(lambda c : 
+                    DSD_Macrostate.MEMORY[DSD_Macrostate.NAMES[c]], line[3]))
+            except KeyError as err:
+                raise PilFormatError("Cannot find resting complex: {}.".format(err))
+            anon = Reaction(reactants, products, rtype, rate)
+        else :
+            try:
+                reactants = list(map(lambda c : complexes[c], 
+                    DSD_Complex.MEMORY[DSD_Complex.NAMES[c]], reactants))
+                products  = list(map(lambda c : complexes[c], 
+                    DSD_Complex.MEMORY[DSD_Complex.NAMES[c]], products))
+            except KeyError as err:
+                raise PilFormatError("Cannot find complex: {}.".format(err))
+            anon = Reaction(reactants, products, rtype, rate)
+
+        if anon.rateunits != units:
+            raise SystemExit("Rate units must be given in {}, not: {}.".format(
+                        reaction.rateunits, units))
+        return anon
+
+    raise PilFormatError('unknown keyword: {}'.format(line[0]))
 

@@ -15,7 +15,8 @@
 #
 
 # Python 3 compatibility
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function
+
 from collections import namedtuple
 
 import dsdobjects.utils as utils
@@ -422,7 +423,7 @@ class DL_Domain(ABC_Domain):
             dtype = 'short' if length <= DL_Domain.DTYPE_CUTOFF else 'long'
         else :
             del DL_Domain.MEMORY[name]
-            raise DSDObjectsError('DL_Domain instance requires dtype and/or length')
+            raise DSDObjectsError('DL_Domain instance {} requires dtype and/or length'.format(name))
 
         self._length = length
         self._dtype = dtype
@@ -513,9 +514,9 @@ class SL_Domain(ABC_Domain):
         # Initialize MEMORY and alert duplicates.  Always do this at the end,
         # otherwise you might fill the memory with crap.
         if self._dtype.name in SL_Domain.MEMORY:
-            if self.name in SL_Domain.MEMORY[self._dtype.name]:
-                other = SL_Domain.MEMORY[self._name]
-                error = DSDDuplicationError('Duplicate DL_Domain specification:', name, other.name)
+            if self._name in SL_Domain.MEMORY[self._dtype.name]:
+                other = SL_Domain.MEMORY[self._dtype.name][self._name]
+                error = DSDDuplicationError('Duplicate DL_Domain specification: {} {}'.format(self._name, other.name))
                 error.existing = other
                 raise error
             else :
@@ -1044,7 +1045,7 @@ class DSD_Macrostate(object):
             if self.canonical_form in DSD_Macrostate.MEMORY:
                 other = DSD_Macrostate.MEMORY[self.canonical_form]
                 if other != self :
-                    error = DSDObjectsError('Conflicting Macrostate Assignment:', other)
+                    error = DSDObjectsError('Conflicting Macrostate Assignment: {} and {}.'.format(self, other))
                     error.existing = other
                     raise error
                 else :

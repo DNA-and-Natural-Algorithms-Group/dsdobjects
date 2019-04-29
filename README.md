@@ -23,7 +23,7 @@ $ python ./setup.py install
 
 ### Quick Start with object prototypes.
 ```py
-from dsdobjects import SequenceConstraint, StrandOrder, LogicDomain, Domain, Complex, Macrostate
+from dsdobjects import SequenceConstraint, StrandOrder, LogicDomain, Domain, Complex, Macrostate, Reaction
 ```
 
 ```py
@@ -59,10 +59,16 @@ from dsdobjects import SequenceConstraint, StrandOrder, LogicDomain, Domain, Com
 ### Quick Start with text input.
 For example load an output file from peppercorn into dsdobjects:
 
-```python
-from dsdobjects import read_pil
-
-domains, complexes, macrostates, detailed_rxns, condensed_rxns = read_pil(filename.pil)
+```py
+ from dsdobjects import read_pil
+ 
+ domains, complexes, macrostates, detailed_rxns, condensed_rxns = read_pil(filename.pil)
+ 
+ myobject = read_pil_line("length d5 = 7")
+ assert isinstance(myobject, LogicDomain)
+ 
+ myobject = read_pil_line("sequence d5 = NNNNN")
+ assert isinstance(myobject, Domain)
 ```
 
 ## Abut the core objects.
