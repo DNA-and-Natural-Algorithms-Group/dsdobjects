@@ -26,6 +26,13 @@ class Test_Reaction(unittest.TestCase):
         length y = 6
         length z = 6
 
+        sequence a = NNNNNN
+        sequence b = NNNNNN 
+        sequence c = NNNNNN
+        sequence x = NNNNNN
+        sequence y = NNNNNN 
+        sequence z = NNNNNN 
+
         # Resting complexes (8) 
         A = a x( b( y( z* c* ) ) ) @i 1e-08 M
         B = b y( c( z( x* a* ) ) ) @i 1e-08 M

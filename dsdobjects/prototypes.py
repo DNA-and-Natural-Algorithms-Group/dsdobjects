@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 from dsdobjects.core import clear_memory
 from dsdobjects.core import DSDObjectsError, DSDDuplicationError
-from dsdobjects.core import SequenceConstraint
+from dsdobjects.core import SequenceConstraint # just pass it on ...
 from dsdobjects.core import DL_Domain, SL_Domain 
 from dsdobjects.core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
 
@@ -396,9 +396,8 @@ def read_pil(data, is_file = False):
             else :
                 (dtype, dlen) = (None, int(line[2]))
 
-            if name not in sl_domains:
-                dldom = assgn_dl_domain(name, dtype, dlen)
-                sldom = assgn_sl_domain(dldom, sequence = 'N'*dlen)
+            if name not in dl_domains:
+                _ = assgn_dl_domain(name, dtype, dlen)
 
         elif line[0] == 'sl-domain':
             if len(line) == 4:
@@ -408,7 +407,7 @@ def read_pil(data, is_file = False):
                                 line[3], len(line[2])))
 
             if name not in sl_domains:
-                dldom = assgn_dl_domain(name, dt=None, dl=int(line[3]))
+                dldom = assgn_dl_domain(name, dt=None, dl=len(line[2]))
                 sldom = assgn_sl_domain(dldom, sequence = line[2])
             else:
                 assert sl_domains[name].sequence == line[2]
@@ -425,7 +424,10 @@ def read_pil(data, is_file = False):
             try : # to replace names with domain objects.
                 sequence = list(map(lambda d : sl_domains[d], sequence))
             except KeyError as err:
-                raise PilFormatError("Cannot find domain: {}.".format(d))
+                try:
+                    sequence = list(map(lambda d : dl_domains[d], sequence))
+                except KeyError as err:
+                    raise PilFormatError("Cannot find domain: {}.".format(err))
             
             complexes[name] = Complex(sequence, structure, name=name)
 
@@ -437,7 +439,7 @@ def read_pil(data, is_file = False):
             try: # to replace names with complex objects.
                 cplxs = list(map(lambda c : complexes[c], line[2]))
             except KeyError as err:
-                raise PilFormatError("Cannot find complex: {}.".format(c))
+                raise PilFormatError("Cannot find complex: {}.".format(err))
             macrostates[name] = Macrostate(name = name, complexes = cplxs)
 
         elif line[0] == 'reaction':
@@ -448,7 +450,7 @@ def read_pil(data, is_file = False):
                     reactants = list(map(lambda c : macrostates[c], line[2]))
                     products  = list(map(lambda c : macrostates[c], line[3]))
                 except KeyError as err:
-                    raise PilFormatError("Cannot find resting complex: {}.".format(c))
+                    raise PilFormatError("Cannot find resting complex: {}.".format(err))
                 rxn = Reaction(reactants, products, rtype, rate)
                 con_reactions.append(rxn)
             else :
@@ -456,7 +458,7 @@ def read_pil(data, is_file = False):
                     reactants = list(map(lambda c : complexes[c], reactants))
                     products  = list(map(lambda c : complexes[c], products))
                 except KeyError as err:
-                    raise PilFormatError("Cannot find complex: {}.".format(c))
+                    raise PilFormatError("Cannot find complex: {}.".format(err))
 
                 rxn = Reaction(reactants, products, rtype, rate)
                 det_reactions.append(rxn)
@@ -467,7 +469,9 @@ def read_pil(data, is_file = False):
         else :
             print('# Ignoring keyword: {}'.format(line[0]))
 
-    return sl_domains, complexes, macrostates, det_reactions, con_reactions
+    domains = sl_domains if len(sl_domains) >= len(dl_domains) else dl_domains
+
+    return domains, complexes, macrostates, det_reactions, con_reactions
 
 def read_pil_line(raw):
     line = parse_pil_string(raw)
@@ -507,9 +511,10 @@ def read_pil_line(raw):
         try : # to replace names with domain objects.
             sequence = list(map(lambda d : SL_Domain.MEMORY[d][d], sequence))
         except KeyError as err:
-            sequence = list(map(lambda d : DL_Domain.MEMORY[d], sequence))
-        except KeyError as err:
-            raise PilFormatError("Cannot find domain: {}.".format(err))
+            try:
+                sequence = list(map(lambda d : DL_Domain.MEMORY[d], sequence))
+            except KeyError as err:
+                raise PilFormatError("Cannot find domain: {}.".format(err))
         
         if len(line) > 3 :
             assert len(line[3]) == 3
