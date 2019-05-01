@@ -8,7 +8,6 @@ SKIP = False
 
 @unittest.skipIf(SKIP, "skipping tests")
 class Test_Reaction(unittest.TestCase):
-
     def setUp(self):
         pass
 

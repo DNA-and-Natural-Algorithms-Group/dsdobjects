@@ -170,7 +170,7 @@ class SequenceConstraint(object):
         return not (self == other)
 
     def __str__(self):
-        return self.constraint
+        return str(self.constraint)
 
     def __len__(self):
         return len(self._sequence)
@@ -337,7 +337,7 @@ class ABC_Domain(object):
         return "{}({})".format(self.__class__, self.name)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     def __invert__(self): 
         return self.complement
@@ -459,8 +459,8 @@ class DL_Domain(ABC_Domain):
     def __repr__(self):
         return 'DL_Domain({}, {}, {})'.format(self._name, self._dtype, self._length)
 
-    def __key__(self):
-        return self.name
+    def __str__(self):
+        return str(self._name)
 
     def __eq__(self, other):
         return self is other
@@ -468,17 +468,20 @@ class DL_Domain(ABC_Domain):
     def __ne__(self, other):
         return not (self == other)
 
-    def __add__(self, other):
-        # We cannot add domains at this point, because adding a domain
-        # produces a new composite domain. However, we don't know the
-        # name of this new domain in this basic class.
-        raise NotImplementedError
-
     def __lt__(self, other):
-        return self.__key__() < other.__key__()
+        return self._name < other._name
+
+    def __gt__(self, other):
+        return self._name > other._name
+
+    def __le__(self, other):
+        return self._name <= other._name
+
+    def __ge__(self, other):
+        return self._name >= other._name
 
     def __hash__(self):
-        return hash(self.__key__())
+        return hash(self.name)
 
 class SL_Domain(ABC_Domain):
     """ An *instance* of a sequence-level domain.
@@ -567,12 +570,6 @@ class SL_Domain(ABC_Domain):
     def length(self):
         return len(self._sequence)
 
-    def __key__(self):
-        return self.name
-
-    def __repr__(self):
-        return 'SL_Domain({}, {}, {})'.format(self._name, self._dtype, self._sequence)
-
     def is_logic(self, other):
         """ Domains are logically equivalent if their dtypes are equal.
 
@@ -581,6 +578,12 @@ class SL_Domain(ABC_Domain):
         may be used to fine-tune context-dependent reaction dynamics.
         """
         return self._dtype is other._dtype
+
+    def __repr__(self):
+        return 'SL_Domain({}, {}, {})'.format(self._name, self._dtype, self._sequence)
+
+    def __str__(self):
+        return str(self._name)
 
     def __eq__(self, other):
         """ Domains are equal if their names are equal
@@ -591,19 +594,25 @@ class SL_Domain(ABC_Domain):
         """
         if not isinstance(self, SL_Domain) or not isinstance(other, SL_Domain):
             return False
-        return self.__key__() is other.__key__()
+        return self.name == other.name
 
     def __ne__(self, other):
         return not (self == other)
 
-    def __add__(self):
-        raise NotImplementedError
-
     def __lt__(self, other):
-        return self.__key__() < other.__key__()
+        return self._name < other._name
+
+    def __gt__(self, other):
+        return self._name > other._name
+
+    def __le__(self, other):
+        return self._name <= other._name
+
+    def __ge__(self, other):
+        return self._name >= other._name
 
     def __hash__(self):
-        return hash(self.__key__())
+        return hash(self.name)
 
 class DSD_Complex(object):
     """A sequence and structure pair.
@@ -973,6 +982,9 @@ class DSD_Complex(object):
     def __repr__(self):
         return 'DSD_Complex({}, {})'.format(self.name, self.canonical_form)
 
+    def __str__(self):
+        return str(self.name)
+
     def __eq__(self, other):
         """ Test if two complexes are equal.
 
@@ -988,11 +1000,24 @@ class DSD_Complex(object):
     def __ne__(self, other):
         return not (self == other)
 
-    def __repr__(self):
-        return "{}({})".format(self.__class__, self.name)
+    def __lt__(self, other):
+        return self.canonical_form < other.canonical_form
 
-    def __str__(self):
-        return "{}".format(self.name)
+    def __gt__(self, other):
+        return self.canonical_form > other.canonical_form
+
+    def __le__(self, other):
+        return self.canonical_form <= other.canonical_form
+
+    def __ge__(self, other):
+        return self.canonical_form >= other.canonical_form
+
+    def __len__(self):
+        # ambiguos... length of sequence? length of nucleotides?
+        raise NotImplementedError
+
+    def __hash__(self):
+        return hash(self.canonical_form)
 
     def __add__(self): 
         raise NotImplementedError
@@ -1003,15 +1028,6 @@ class DSD_Complex(object):
         else:
             return self.__add__(other)
 
-    def __len__(self):
-        # ambiguos... length of sequence? length of nucleotides?
-        raise NotImplementedError
-
-    def __lt__(self, other):
-        return self.canonical_form < other.canonical_form
-
-    def __hash__(self):
-        return hash(self.canonical_form)
 
 class DSD_Macrostate(object):
     """
@@ -1021,7 +1037,8 @@ class DSD_Macrostate(object):
     NAMES = dict()  # NAMES[name] = complex.canonical_form
     MEMORY = dict() # MEMORY[complex.canonical_form] = self
 
-    def __init__(self, complexes, name='', prefix='r', representative=None, memorycheck=True):
+    def __init__(self, complexes, name='', prefix='r', 
+            representative=None, memorycheck=True):
 
         # Resting sets store complexes in canonical form?
         assert len(set(complexes)) == len(complexes)
@@ -1045,7 +1062,9 @@ class DSD_Macrostate(object):
             if self.canonical_form in DSD_Macrostate.MEMORY:
                 other = DSD_Macrostate.MEMORY[self.canonical_form]
                 if other != self :
-                    error = DSDObjectsError('Conflicting Macrostate Assignment: {} and {}.'.format(self, other))
+                    error = DSDObjectsError(
+                            'Conflicting Macrostate Assignment: {} and {}.'.format(
+                                self, other))
                     error.existing = other
                     raise error
                 else :
@@ -1098,6 +1117,12 @@ class DSD_Macrostate(object):
     def kernel_string(self):
         return self.canonical.kernel_string
 
+    def __repr__(self):
+        return "DSD_Macrostate(\"%s\", %s)" % (self.name, str(self.complexes))
+
+    def __str__(self):
+        return str(self.name)
+
     def __eq__(self, other):
         """
         Two resting sets are equal if their complexes are equal
@@ -1107,8 +1132,35 @@ class DSD_Macrostate(object):
     def __ne__(self, other):
         return not (self == other)
 
-    def __repr__(self):
-        return "DSD_Macrostate(\"%s\", %s)" % (self.name, str(self.complexes))
+    def __lt__(self, other):
+        """ ReactionPathway objects are sorted by their canonical form.  """
+        return (self.canonical_form < other.canonical_form)
+
+    def __gt__(self, other):
+        """ ReactionPathway objects are sorted by their canonical form.  """
+        return (self.canonical_form > other.canonical_form)
+
+    def __le__(self, other):
+        return self.canonical_form <= other.canonical_form
+
+    def __ge__(self, other):
+        return self.canonical_form >= other.canonical_form
+
+    def __len__(self):
+        """ The number of species in a macrostate """
+        return len(self._complexes)
+
+    def __hash__(self):
+        return hash(self.canonical_form)
+
+    def __add__(self): 
+        raise NotImplementedError
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
 
 class DSD_Reaction(object):
     """ A reaction pathway.
@@ -1238,6 +1290,18 @@ class DSD_Reaction(object):
     def __ne__(self, other):
         return not (self == other)
 
+    def __lt__(self, other):
+        return self.canonical_form < other.canonical_form
+
+    def __gt__(self, other):
+        return self.canonical_form > other.canonical_form
+
+    def __le__(self, other):
+        return self.canonical_form <= other.canonical_form
+
+    def __ge__(self, other):
+        return self.canonical_form >= other.canonical_form
+
     def __hash__(self):
         return hash(self.canonical_form)
 
@@ -1291,40 +1355,6 @@ class DSD_StrandOrder(object):
             DSD_StrandOrder.MEMORY[self.canonical_form] = self
 
     @property
-    def canonical_form(self):
-        """ Sort Sequences in a unique way for each complex.
-        """
-        if not self._canonical_form:
-            all_variants = dict()
-            if not self._lol_sequence:
-                self._lol_sequence = utils.make_lol_sequence(self._sequence)
-            for e in range(0,len(self._lol_sequence)):
-                canon = tuple(map(lambda x: tuple(map(str, x)), 
-                    self._lol_sequence[e:] + self._lol_sequence[:e]))
-                if canon not in all_variants:
-                    all_variants[canon] = e
-                    if self._memorycheck:
-                        self.do_memorycheck(canon, e)
-            self._canonical_form = sorted(all_variants)[0]
-            self._rotations = abs(all_variants[self._canonical_form] - len(self))
-        return self._canonical_form
- 
-    @property
-    def rotations(self):
-        """Cyclic permutations between representation and canonical form."""
-        return self._rotations
-
-
-    @property
-    def lol_sequence(self):
-        """ Returns sequence as a list of lists, without the '+' separator.
-        
-         Example:
-          ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
-        """
-        return utils.make_lol_sequence(self._sequence)
-
-    @property
     def name(self):
         return self._name
 
@@ -1342,13 +1372,48 @@ class DSD_StrandOrder(object):
         """list: sequence the complex object. """
         return self._sequence[:]
 
-    def __len__(self):
-        return len(self._lol_sequence)
-
     @property
     def kernel_string(self):
         """str: print sequence and structure in `kernel` notation. """
         return "{}".format(" ".join(map(str,self._sequence)))
+
+    @property
+    def size(self):
+        """Size of the StrandOrder is the number of strands."""
+        return len(self._lol_sequence)
+
+    @property
+    def canonical_form(self):
+        """ Sort Sequences in a unique way for each complex.
+        """
+        if not self._canonical_form:
+            all_variants = dict()
+            if not self._lol_sequence:
+                self._lol_sequence = utils.make_lol_sequence(self._sequence)
+            for e in range(0, self.size):
+                canon = tuple(map(lambda x: tuple(map(str, x)), 
+                    self._lol_sequence[e:] + self._lol_sequence[:e]))
+                if canon not in all_variants:
+                    all_variants[canon] = e
+                    if self._memorycheck:
+                        self.do_memorycheck(canon, e)
+            self._canonical_form = sorted(all_variants)[0]
+            self._rotations = abs(all_variants[self._canonical_form] - self.size)
+        return self._canonical_form
+ 
+    @property
+    def rotations(self):
+        """Cyclic permutations between representation and canonical form."""
+        return self._rotations
+
+    @property
+    def lol_sequence(self):
+        """ Returns sequence as a list of lists, without the '+' separator.
+        
+         Example:
+          ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
+        """
+        return utils.make_lol_sequence(self._sequence)
 
     def do_memorycheck(self, current = None, rotations=None):
         if current is None: 
@@ -1359,13 +1424,39 @@ class DSD_StrandOrder(object):
             error = DSDDuplicationError('Duplicate DSD_StrandOrder specification:', 
                     current)
             error.existing = other
-            error.rotations = abs(rotations - len(self)) - other._rotations
+            error.rotations = abs(rotations - self.size) - other._rotations
             raise error
 
     def __repr__(self):
         return 'DSD_StrandOrder({}: {})'.format(self.name, ' '.join(map(str, self.sequence)))
 
+    def __str__(self):
+        return str(self.name)
 
+    def __eq__(self, other):
+        return self.canonical_form == other.canonical_form
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __lt__(self, other):
+        return self.canonical_form < other.canonical_form
+
+    def __gt__(self, other):
+        return self.canonical_form > other.canonical_form
+
+    def __le__(self, other):
+        return self.canonical_form <= other.canonical_form
+
+    def __ge__(self, other):
+        return self.canonical_form >= other.canonical_form
+
+    def __len__(self):
+        # ambiguos... length of sequence? number of strands?
+        raise NotImplementedError
+
+    def __hash__(self):
+        return hash(self.canonical_form)
 
 # Deprecated
 class DSD_RestingSet(DSD_Macrostate):

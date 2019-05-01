@@ -176,24 +176,8 @@ class Complex(DSD_Complex):
                     cplxs.append(e.existing)
             return sorted(cplxs)
 
-    def __cmp__(self, other):
-        """
-        Two complexes are compared on the basis of their complexes
-        """
-        return cmp(self.canonical_form, other.canonical_form)
-
 class Macrostate(DSD_Macrostate):
-    def __init__(self, *kargs, **kwargs):
-        super(Macrostate, self).__init__(*kargs, **kwargs)
-
-    def __str__(self):
-        return self.name
-
-    def __len__(self):
-        """
-        The number of species in a resting set
-        """
-        return len(self._complexes)
+    pass
 
 class Reaction(DSD_Reaction):
     RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
