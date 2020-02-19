@@ -137,6 +137,13 @@ class DL_Domain_Test(unittest.TestCase):
         self.assertEqual(x, fooC)
         self.assertTrue(x is fooC)
 
+    def test_not_implemented(self):
+        foo = bc.DL_Domain('foo', dtype = 'short')
+        bar = bc.DL_Domain('bar', dtype = 'long')
+        with self.assertRaises(NotImplementedError):
+            foobar = foo + bar
+
+
 @unittest.skipIf(SKIP, "skipping tests")
 class SL_Domain_Test(unittest.TestCase):
     def setUp(self): 
@@ -173,6 +180,13 @@ class SL_Domain_Test(unittest.TestCase):
         self.assertEqual(~foo, [foC])
         self.assertEqual(~foo1, [foC])
         self.assertEqual(~foo2, [foC])
+
+    def test_not_implemented(self):
+        foo1 = bc.SL_Domain(self.foo, 'HHHHHHH', variant='1')
+        foo2 = bc.SL_Domain(self.foo, 'NNNNNNN', variant='2')
+        with self.assertRaises(NotImplementedError):
+            foobar = foo1 + foo2
+
 
 @unittest.skipIf(SKIP, "skipping tests")
 class DSD_ComplexObjectTest(unittest.TestCase):

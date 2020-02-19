@@ -342,7 +342,7 @@ class ABC_Domain(object):
     def __invert__(self): 
         return self.complement
 
-    def __add__(self): 
+    def __add__(self, other): 
         raise NotImplementedError
 
     def __radd__(self, other):
@@ -457,7 +457,7 @@ class DL_Domain(ABC_Domain):
         return self._dtype
 
     def __repr__(self):
-        return 'DL_Domain({}, {}, {})'.format(self._name, self._dtype, self._length)
+        return '{}({}, {}, {})'.format(self.__class__, self.name, self._dtype, self._length)
 
     def __str__(self):
         return str(self._name)
@@ -580,7 +580,7 @@ class SL_Domain(ABC_Domain):
         return self._dtype is other._dtype
 
     def __repr__(self):
-        return 'SL_Domain({}, {}, {})'.format(self._name, self._dtype, self._sequence)
+        return '{}({}, {}, {})'.format(self.__class__, self.name, self._dtype, self._sequence)
 
     def __str__(self):
         return str(self._name)
@@ -980,7 +980,7 @@ class DSD_Complex(object):
         return True
 
     def __repr__(self):
-        return 'DSD_Complex({}, {})'.format(self.name, self.canonical_form)
+        return '{}({}, {})'.format(self.__class__, self.name, self.canonical_form)
 
     def __str__(self):
         return str(self.name)
@@ -1019,7 +1019,7 @@ class DSD_Complex(object):
     def __hash__(self):
         return hash(self.canonical_form)
 
-    def __add__(self): 
+    def __add__(self, other): 
         raise NotImplementedError
 
     def __radd__(self, other):
@@ -1045,17 +1045,17 @@ class DSD_Macrostate(object):
         self._complexes = sorted(complexes, key=lambda x : x.canonical_form)
         
         if representative is None:
-            self._canonical = self._complexes[0]
+            self._canonical_cplx = self._complexes[0]
         else:
             assert isinstance(representative, DSD_Complex)
             assert representative in set(complexes)
-            self._canonical = representative
+            self._canonical_cplx = representative
 
         # Assign name
         if name:
             self._name = name
         else:
-            self._name = prefix + self._canonical.name
+            self._name = prefix + self._canonical_cplx.name
 
         # two complexes are equal if they have equal canonial form
         if memorycheck :
@@ -1097,28 +1097,36 @@ class DSD_Macrostate(object):
         Gives the canonical name of the resting set, chosen by its "first" 
         element. (sorted by canonical forms)
         """
-        return self._canonical.name
+        return self._canonical_cplx.name
 
     @property
     def canonical(self):
         """
         See ``canonical_name``.
         """
-        return self._canonical
+        print('Deprecated function, use DSD_Macrostate.canonical_cplx')
+        return self.canonical_complex
+
+    @property
+    def canonical_complex(self):
+        """
+        See ``canonical_name``.
+        """
+        return self._canonical_cplx
 
     @property
     def canonical_form(self):
         """
         See ``canonical_name``.
         """
-        return self._canonical.canonical_form
+        return self._canonical_cplx.canonical_form
 
     @property
     def kernel_string(self):
         return self.canonical.kernel_string
 
     def __repr__(self):
-        return "DSD_Macrostate(\"%s\", %s)" % (self.name, str(self.complexes))
+        return '{}({}, {})'.format(self.__class__, self.name, str(self.complexes))
 
     def __str__(self):
         return str(self.name)
@@ -1153,7 +1161,7 @@ class DSD_Macrostate(object):
     def __hash__(self):
         return hash(self.canonical_form)
 
-    def __add__(self): 
+    def __add__(self, other): 
         raise NotImplementedError
 
     def __radd__(self, other):
@@ -1428,7 +1436,7 @@ class DSD_StrandOrder(object):
             raise error
 
     def __repr__(self):
-        return 'DSD_StrandOrder({}: {})'.format(self.name, ' '.join(map(str, self.sequence)))
+        return '{}({}: {})'.format(self.__class__, self.name, ' '.join(map(str, self.sequence)))
 
     def __str__(self):
         return str(self.name)
