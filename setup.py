@@ -12,14 +12,14 @@ from dsdobjects import SequenceConstraint, LogicDomain, Domain, Complex, Reactio
 
 setup(
     name='dsdobjects',
-    version='0.7',
+    version='0.7.1',
     description='Base classes for DSD design',
     long_description=LONG_DESCRIPTION,
     url='https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects',
     author='Stefan Badelt',
     author_email='badelt@caltech.edu',
     license='MIT',
-    download_url = 'https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects/archive/v0.7.tar.gz',
+    download_url = 'https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects/archive/v0.7.1.tar.gz',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 3',

@@ -6,7 +6,7 @@
 #
 # Distributed under the MIT License, use at your own risk.
 #
-
+import re
 from functools import reduce
 
 class DSDUtilityError(Exception):
@@ -255,4 +255,16 @@ def convert_units(val, unit_in, unit_out):
     else:
         raise DSDUtilityError('Unknown unit for conversion: {}'.format(unit_in))
 
+def natural_sort(l):
+    """
+    Sorts a collection in the order humans would expect. Implementation from
+    http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort
+    """
+    def convert(text): 
+        return int(text) if text.isdigit() else text.lower()
+
+    def alphanum_key(key): 
+        return [convert(c) for c in re.split('([0-9]+)', str(key))]
+
+    return sorted(l, key=alphanum_key)
 
