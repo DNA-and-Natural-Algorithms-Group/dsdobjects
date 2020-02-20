@@ -432,7 +432,7 @@ class DSD_Macrostate(unittest.TestCase):
         B = bc.DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
 
         x = bc.DSD_Macrostate([A, B], representative=B)
-        self.assertEqual(x.canonical, B)
+        self.assertEqual(x.canonical_complex, B)
         
 @unittest.skipIf(SKIP, "skipping tests")
 class DSD_StrandOrder(unittest.TestCase):

@@ -676,7 +676,7 @@ class DSD_Complex(object):
         self._loop_index = None
         self._exterior_loops = None
         self._lol_sequence = None
-        self._strands = None
+        self._strands = None # not used
         self._domains = None
         self._exterior_domains = None
         self._enclosed_domains = None
@@ -1104,7 +1104,7 @@ class DSD_Macrostate(object):
         """
         See ``canonical_name``.
         """
-        print('Deprecated function, use DSD_Macrostate.canonical_cplx')
+        print('Deprecated function, use DSD_Macrostate.canonical_complex')
         return self.canonical_complex
 
     @property
@@ -1206,7 +1206,7 @@ class DSD_Reaction(object):
         if memorycheck:
             if self.canonical_form in DSD_Reaction.MEMORY:
                 other = DSD_Reaction.MEMORY[self.canonical_form]
-                error = DSDDuplicationError('Duplicate reaction in system.', self.canonical_form)
+                error = DSDDuplicationError('Duplicate reaction in system: {}'.format(str(self)))
                 error.existing = other
                 raise error
             else :

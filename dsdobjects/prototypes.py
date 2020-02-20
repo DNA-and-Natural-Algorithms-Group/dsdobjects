@@ -12,13 +12,14 @@
 #   - please consider providing thoughts about missing functionality
 #
 from __future__ import absolute_import, division, print_function
+from collections import namedtuple
 
 from dsdobjects.core import DSDObjectsError, DSDDuplicationError
 from dsdobjects.core import SequenceConstraint # just pass it on ...
 from dsdobjects.core import DL_Domain, SL_Domain 
 from dsdobjects.core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
 
-from dsdobjects.utils import split_complex, natural_sort
+from dsdobjects.utils import split_complex, natural_sort, convert_units
 
 class LogicDomain(DL_Domain):
     """
@@ -42,20 +43,29 @@ class LogicDomain(DL_Domain):
                 raise DSDObjectsError('Conflicting length assignments for {}: "{}" vs. "{}"'.format(
                     name, length, other.length))
             return e.existing
-        self._nucleotides = None
+
+        self.nucleotides = None
         return self
 
-    def __init__(self, name, dtype=None, length=None):
+    def __init__(self, name, dtype = None, length = None):
         # Remove default initialziation to get __new__ to work
         pass
 
     @property
-    def nucleotides(self):
-        return self._nucleotides
+    def identity(self):
+        """
+        Returns the identity of this domain, which is its name without a
+        complement specifier (i.e. A and A* both have identity A).
+        """
+        return self._name[:-1] if self._name[-1] == '*' else self._name
 
-    @nucleotides.setter
-    def nucleotides(self, value):
-        self._nucleotides = value
+    @property
+    def is_complement(self):
+        """
+        Returns true if this domain is a complement (e.g. A* rather than A),
+        false otherwise.
+        """
+        return self._name[-1:] == '*'
 
     @property
     def complement(self):
@@ -73,22 +83,6 @@ class LogicDomain(DL_Domain):
         Returns True if this domain is complementary to the argument.
         """
         return self == ~other
-
-    @property
-    def identity(self):
-        """
-        Returns the identity of this domain, which is its name without a
-        complement specifier (i.e. A and A* both have identity A).
-        """
-        return self._name[:-1] if self._name[-1] == '*' else self._name
-
-    @property
-    def is_complement(self):
-        """
-        Returns true if this domain is a complement (e.g. A* rather than A),
-        false otherwise.
-        """
-        return self._name[-1:] == '*'
 
 class Domain(SL_Domain):
     def __init__(self, dtype, sequence, variant=''):
@@ -110,7 +104,7 @@ class Complex(DSD_Complex):
     Overwrites some functions with new names, adds some convenient stuff..
     """
 
-    PREFIX = 'e'
+    CONCENTRATION = namedtuple('concentration', 'mode value unit')
 
     @staticmethod
     def clear_memory(memory=True, names=True, ids=True):
@@ -121,26 +115,32 @@ class Complex(DSD_Complex):
         if ids:
             DSD_Complex.ID = dict()
 
-    def __init__(self, sequence, structure, name='', prefix='', memorycheck=True):
-        try :
-            if not prefix :
-                prefix = Complex.PREFIX
-            super(Complex, self).__init__(sequence, structure, name, prefix, memorycheck)
-        except DSDObjectsError :
-            backup = 'enum' if prefix != 'enum' else 'proto'
-            super(Complex, self).__init__(sequence, structure, name, backup, memorycheck)
-            logging.warning('Complex name existed, prefix has been changed to: {}'.format(backup))
-        
-        self.concentration = None # e.g. (initial, 5, nM)
+    def __init__(self, sequence, structure, name='', prefix='cplx', memorycheck=True):
+        super(Complex, self).__init__(sequence, structure, name, prefix, memorycheck)
+        self._concentration = None # e.g. (initial, 5, nM)
         assert self.is_domainlevel_complement
 
-    def get_strand(self, loc):
-        """
-        Returns the strand at the given index in this complex
-        """
-        if loc is not None :
-            return self._strands[loc]
-        return None
+    @property
+    def concentration(self):
+        return self._concentration
+
+    @concentration.setter
+    def concentration(self, trip):
+        if trip is None:
+            self._concentration = None
+        else:
+            (mode, value, unit) = trip
+            assert isinstance(value, (int, float))
+            mode = 'initial' if mode[0] == 'i' else 'constant'
+            self._concentration = Complex.CONCENTRATION(mode, value, unit)
+
+    def concentrationformat(self, out):
+        # const = Complex.concentrationformat('M').value
+        mod = self._concentration.mode
+        val = self._concentration.value
+        uni = self._concentration.unit
+        val = convert_units(val, uni, out) 
+        return Complex.CONCENTRATION(mod, val, out)
 
     @property
     def available_domains(self):
@@ -236,7 +236,7 @@ class Reaction(DSD_Reaction):
         if len(self.reactants) == 1:
             cplx = self.reactants[0]
             if isinstance(cplx, Macrostate):
-                cplx = cplx.canonical
+                cplx = cplx.canonical_complex
             try:
                 so = StrandOrder(cplx.sequence, prefix='so_')
             except DSDDuplicationError as e : 
@@ -253,7 +253,7 @@ class Reaction(DSD_Reaction):
         elif len(self.products) == 1:
             cplx = self.products[0]
             if isinstance(cplx, Macrostate):
-                cplx = cplx.canonical
+                cplx = cplx.canonical_complex
             try:
                 so = StrandOrder(cplx.sequence, prefix='so_')
             except DSDDuplicationError as e : 
@@ -276,7 +276,7 @@ class Reaction(DSD_Reaction):
         cxs = self.reactants if pt2 else self.products
 
         if any(map(lambda c: isinstance(c, Macrostate), cxs)):
-            cxs = list(map(lambda x: x.canonical, cxs))
+            cxs = list(map(lambda x: x.canonical_complex, cxs))
 
         assert len(cxs) == 2 # or better <= ?
 

@@ -154,13 +154,19 @@ def read_pil_line(raw):
             except KeyError as err:
                 raise PilFormatError("Cannot find domain: {}.".format(err))
         
+        try:
+            cplx = Complex(sequence, structure, name=name)
+        except DSDDuplicationError as err:
+            cplx = err.existing
+            if cplx.name != name:
+                raise DSDObjectsError("Complex {} exists under different name: {}.".format(name, cplx.name))
+
         if len(line) > 3 :
             assert len(line[3]) == 3
-            print("WARNING: Ignoring concentration for {}: {}.".format(name, line[3]))
-        try:
-            return Complex(sequence, structure, name=name)
-        except DSDDuplicationError as err:
-            return err.existing
+            if cplx.concentration is not None:
+                print("WARNING: Updating concentration for {} to {}.".format(name, line[3]))
+            cplx.concentration = (line[3][0], float(line[3][1]), line[3][2])
+        return cplx
 
 
     elif line[0] == 'resting-macrostate':
