@@ -1,3 +1,11 @@
+#
+# tests/test_objectio.py
+#   - copy and/or modify together with dsdobjects/objectio.py
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
+# Distributed under the MIT License, use at your own risk.
+#
 import unittest
 
 from dsdobjects import LogicDomain, Domain, Complex, Reaction, Macrostate, StrandOrder

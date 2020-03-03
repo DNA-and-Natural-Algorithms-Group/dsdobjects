@@ -5,9 +5,13 @@ from setuptools import setup, find_packages
 LONG_DESCRIPTION="""
 This Python module provides a library of protype objects and base classes for
 domain-level strand displacement (DSD) programming. There are two types of
-usage: 1) ready-to-go prototype objects, 2) tweak-em-yourself core objects.
+usage: 
 
+1) ready-to-go prototype objects, e.g.
 from dsdobjects import SequenceConstraint, LogicDomain, Domain, Complex, Reaction, Macrostate, StrandOrder
+
+2) tweak-em-yourself core objects.
+from dsdobjects.core.base_classes import SequenceConstraint, DL_Domain, SL_Domain, DSD_StrandOrder, DSD_Complex, DSD_Macrostate, DSD_Reaction
 """
 
 setup(

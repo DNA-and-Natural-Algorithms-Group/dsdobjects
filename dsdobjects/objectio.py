@@ -1,3 +1,15 @@
+#
+# dsdobjects/objectio.py
+#   - copy and/or modify together with tests/test_objectio.py
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
+# Distributed under the MIT License, use at your own risk.
+#
+from __future__ import absolute_import, division, print_function
+
+import logging
+log = logging.getLogger(__name__)
 
 # Memorymanagement
 from dsdobjects.core import clear_memory
@@ -47,11 +59,11 @@ def read_reaction(line):
 
     if rate is None:
         r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
-        logging.warning("Ignoring input reaction without a rate: {}".format(r))
+        log.warning("Ignoring input reaction without a rate: {}".format(r))
         return None, None, None, None, None, None
     elif rtype is None or rtype not in Reaction.RTYPES:
         r = "{} -> {}".format(' + '.join(line[2]), ' + '.join(line[3]))
-        logging.warning("Ignoring input reaction of with rtype='{}': {}".format(rtype, r))
+        log.warning("Ignoring input reaction of with rtype='{}': {}".format(rtype, r))
         return None, None, None, None, None, None
     else :
         r = "[{} = {:12g} {}] {} -> {}".format(
@@ -164,7 +176,7 @@ def read_pil_line(raw):
         if len(line) > 3 :
             assert len(line[3]) == 3
             if cplx.concentration is not None:
-                print("WARNING: Updating concentration for {} to {}.".format(name, line[3]))
+                log.warning("Updating concentration for {} to {}.".format(name, line[3]))
             cplx.concentration = (line[3][0], float(line[3][1]), line[3][2])
         return cplx
 

@@ -1,3 +1,11 @@
+#
+# tests/test_prototypes.py
+#   - copy and/or modify together with dsdobjects/prototypes.py
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
+# Distributed under the MIT License, use at your own risk.
+#
 import unittest
 
 from dsdobjects import LogicDomain, Domain, Complex, Reaction, Macrostate, StrandOrder

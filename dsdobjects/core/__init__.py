@@ -5,7 +5,8 @@
 #
 # Distributed under the MIT License, use at your own risk.
 #
-from __future__ import absolute_import, division, print_function
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 from dsdobjects.core.base_classes import clear_memory
 from dsdobjects.core.base_classes import DSDObjectsError, DSDDuplicationError 

@@ -5,6 +5,8 @@
 #
 # Distributed under the MIT License, use at your own risk.
 #
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 from pyparsing import ParseException
 from dsdobjects.parser.pil_kernel_format import parse_kernel_file, parse_kernel_string

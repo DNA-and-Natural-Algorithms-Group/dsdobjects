@@ -17,6 +17,9 @@
 # Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+import logging
+log = logging.getLogger(__name__)
+
 from collections import namedtuple
 
 import dsdobjects.utils as utils
@@ -1104,7 +1107,7 @@ class DSD_Macrostate(object):
         """
         See ``canonical_name``.
         """
-        print('Deprecated function, use DSD_Macrostate.canonical_complex')
+        print("DEPRECATION WARNING: use DSD_Macrostate.canonical_complex.")
         return self.canonical_complex
 
     @property

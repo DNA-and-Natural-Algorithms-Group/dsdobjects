@@ -108,6 +108,11 @@ the length of a complex must be defined upon inheritance.
 ```
 
 ## Version
+0.7.1 -- pil I/O for prototypes and customn objects
+  * prototype complex concentration
+  * read_pil supports inherited objects
+  * logging support
+  * bug fix for adding core objects
 
 0.7 -- Python 3.x support / prototypes
   * basic support of prototype objects

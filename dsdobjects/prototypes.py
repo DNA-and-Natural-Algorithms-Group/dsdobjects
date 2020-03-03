@@ -12,13 +12,16 @@
 #   - please consider providing thoughts about missing functionality
 #
 from __future__ import absolute_import, division, print_function
+
+import logging
+log = logging.getLogger(__name__)
+
 from collections import namedtuple
 
 from dsdobjects.core import DSDObjectsError, DSDDuplicationError
 from dsdobjects.core import SequenceConstraint # just pass it on ...
 from dsdobjects.core import DL_Domain, SL_Domain 
 from dsdobjects.core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
-
 from dsdobjects.utils import split_complex, natural_sort, convert_units
 
 class LogicDomain(DL_Domain):
@@ -28,6 +31,19 @@ class LogicDomain(DL_Domain):
     designated as short or long. If the latter method is used, the code will use
     the relevant constant as the integer domain length.
     """
+    
+    def __init__(self, name='', prefix='d', dtype=None, length=None):
+        # Assign name
+        if name == '':
+            if prefix == '':
+                raise NuskellObjectError('NuskellDomain prefix must not be empty!')
+            elif prefix[-1].isdigit():
+                raise NuskellObjectError('NuskellDomain must not end with a digit!')
+            name = prefix + str(NuskellDomain.ID)
+            NuskellDomain.ID += 1
+        super(NuskellDomain, self).__init__(name, dtype, length)
+
+
 
     def __new__(cls, name, dtype=None, length=None):
         # The new method returns the present instance of an object, if it exists

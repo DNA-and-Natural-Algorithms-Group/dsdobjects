@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 #
-# tests for dsdobjects.base_classes
+# tests for dsdobjects.core.base_classes
 #
 # Written by Stefan Badelt (badelt@caltech.edu)
 #
