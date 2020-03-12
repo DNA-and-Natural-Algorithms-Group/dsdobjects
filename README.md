@@ -27,48 +27,50 @@ from dsdobjects import SequenceConstraint, StrandOrder, LogicDomain, Domain, Com
 ```
 
 ```py
- # Define a few toy domains:
- a = LogicDomain('a', dtype='long')
- b = LogicDomain('b', dtype='long', length=9)
- t = LogicDomain('t', dtype='short', length=6)
- 
- # LogicDomains have exactly one complement, it can be initialized 
- # and/or accessed using the __invert__ operator. The built-in 
- # memory management ensures that there is only one object for each domain.
- assert (a is ~(~a))
- 
- # Use the Domains to define a Complex ...
- cplx = Complex([a, b, c, ~b, '+', ~a], list('((.)+)'), name='rudolf')
+# Define a few toy domains:
+a = LogicDomain('a', dtype='long')
+b = LogicDomain('b', dtype='long', length=9)
+c = LogicDomain('c', dtype='short', length=6)
 
- # ... and test some of the built-in complex properties:
- cplx.kernel_string
- cplx.canonical_form
- cplx.size
- for r in cplx.rotate():
-     print r.kernel_string
- cplx.pair_table
- 
- # If you were to define two complexes as one disconnected complex ... 
- cplx = Complex([a, b, c, ~b, '+', ~a], list('.(.)+.'), name='cplx')
- assert cplx.is_connected is False
+# LogicDomains have exactly one complement, it can be initialized 
+# and/or accessed using the __invert__ operator. The built-in 
+# memory management ensures that there is only one object for each domain.
+assert (a is ~(~a))
 
- # ... you can quickly and return the indiviudal complexes:
- cx1, cx2 = cplx.split()
+# Use the Domains to define a Complex ...
+cplx = Complex([a, b, c, ~b, '+', ~a], list('((.)+)'), name='rudolf')
+
+# ... and test some of the built-in complex properties:
+cplx.kernel_string
+cplx.canonical_form
+cplx.size
+for r in cplx.rotate():
+    print(r.kernel_string)
+cplx.pair_table
+
+# If you were to define two complexes as one disconnected complex ... 
+cplx = Complex([a, b, c, ~b, '+', ~a], list('.(.)+.'), name='cplx')
+assert cplx.is_connected is False
+
+# ... you can quickly and return the indiviudal complexes:
+cx1, cx2 = cplx.split()
 ```
 
 ### Quick Start with text input.
-For example load an output file from peppercorn into dsdobjects:
+For example initialize prototype objects by loading a system (or a single line) of 
+*.pil file format:
 
 ```py
- from dsdobjects import read_pil
- 
- domains, complexes, macrostates, detailed_rxns, condensed_rxns = read_pil(filename.pil)
- 
- myobject = read_pil_line("length d5 = 7")
- assert isinstance(myobject, LogicDomain)
- 
- myobject = read_pil_line("sequence d5 = NNNNN")
- assert isinstance(myobject, Domain)
+import dsdobjects.objectio as oio
+oio.set_prototypes()
+
+domains, complexes, macrostates, detailed_rxns, condensed_rxns = oio.read_pil(filename.pil)
+
+myobject = oio.read_pil_line("length d5 = 7")
+assert isinstance(myobject, LogicDomain)
+
+myobject = oio.read_pil_line("sequence d6 = NNNNN")
+assert isinstance(myobject, Domain)
 ```
 
 ## Abut the core objects.
@@ -87,24 +89,24 @@ Some potential ambiguities, such as requesting the complement of a Domain,  or
 the length of a complex must be defined upon inheritance.
 
 ```py
- from dsdobjects import DL_Domain
+from dsdobjects.core import DL_Domain
+
+# A personalized domain that extends the DL_Domain base class.
+class MyDomain(DL_Domain):
+
+    def __init__(self, name, dtype=None, length=None):
+        super(MyDomain, self).__init__(name, dtype, length)
  
- # A personalized domain that extends the DL_Domain base class.
- class MyDomain(DL_Domain):
- 
-     def __init__(self, name, dtype=None, length=None):
-         super(MyDomain, self).__init__(name, dtype, length)
-  
-     @property
-     def complement(self):
-         # Automatically initialize or return the complementary domain.
-         if self._complement is None:
-             cname = self._name[:-1] if self.is_complement else self._name + '*'
-             if cname in DL_Domain.MEMORY:
-                 self._complement = DL_Domain.MEMORY[cname]
-             else :
-                 self._complement = MyDomain(cname, self.dtype, self.length)
-         return self._complement
+    @property
+    def complement(self):
+        # Automatically initialize or return the complementary domain.
+        if self._complement is None:
+            cname = self._name[:-1] if self.is_complement else self._name + '*'
+            if cname in DL_Domain.MEMORY:
+                self._complement = DL_Domain.MEMORY[cname]
+            else :
+                self._complement = MyDomain(cname, self.dtype, self.length)
+        return self._complement
 ```
 
 ## Version
