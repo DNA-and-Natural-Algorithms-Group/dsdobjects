@@ -22,7 +22,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         ],
-    install_requires=['future'],
+    install_requires=['future', 'pyparsing'],
     packages=['dsdobjects', 'dsdobjects.parser', 'dsdobjects.core'],
     test_suite='tests',
 )
