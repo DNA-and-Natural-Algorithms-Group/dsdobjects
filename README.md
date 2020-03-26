@@ -1,5 +1,13 @@
 # dsdobjects: an object library for DSD programming
 
+[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/dna-and-natural-algorithms-group/dsdobjects)](https://github.com/dna-and-natural-algorithms-group/dsdobjects/tags)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/dna-and-natural-algorithms-group/dsdobjects?include_prereleases)](https://github.com/dna-and-natural-algorithms-group/dsdobjects/releases)
+[![PyPI version](https://badge.fury.io/py/dsdobjects.svg)](https://badge.fury.io/py/dsdobjects)
+[![PyPI - License](https://img.shields.io/pypi/l/dsdobjects)](https://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.com/dna-and-natural-algorithms-group/dsdobjects.svg?branch=development)](https://travis-ci.com/github/dna-and-natural-algorithms-group/dsdobjects)
+[![Codecov branch](https://img.shields.io/codecov/c/github/dna-and-natural-algorithms-group/dsdobjects/development)](https://codecov.io/gh/dna-and-natural-algorithms-group/dsdobjects)
+
+
 This Python module provides a library of protype objects and base classes for
 domain-level strand displacement (DSD) programming. There are two types of
 usage: 

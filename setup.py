@@ -18,10 +18,11 @@ setup(
     download_url = 'https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects/archive/v0.7.1.tar.gz',
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         ],
-    install_requires=['future'],
+    install_requires=['future', 'pyparsing'],
     packages=['dsdobjects', 'dsdobjects.parser', 'dsdobjects.core'],
     test_suite='tests',
 )
