@@ -118,6 +118,9 @@ class MyDomain(DL_Domain):
 ```
 
 ## Version
+0.8 -- requires Python<=3.7
+  * bug fix in pil I/O for reaction rates
+
 0.7.1 -- pil I/O for prototypes and customn objects
   * prototype complex concentration
   * read_pil supports inherited objects

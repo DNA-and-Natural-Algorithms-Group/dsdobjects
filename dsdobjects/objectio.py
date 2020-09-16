@@ -180,7 +180,6 @@ def read_pil_line(raw):
             cplx.concentration = (line[3][0], float(line[3][1]), line[3][2])
         return cplx
 
-
     elif line[0] == 'resting-macrostate':
         if Macrostate is None:
             raise MissingObjectError('No Macrostate object found: {}'.format(Macrostate))
@@ -199,6 +198,7 @@ def read_pil_line(raw):
         if Reaction is None:
             raise MissingObjectError('No Reaction object found: {}'.format(Reaction))
         reactants, products, rtype, rate, units, r = read_reaction(line)
+        rate = DSD_Reaction.Rate(rate, [x for x in units.split('/') if x])
 
         if rtype == 'condensed' :
             try:
@@ -221,7 +221,7 @@ def read_pil_line(raw):
 
         if anon.rateunits != units:
             raise SystemExit("Rate units must be given in {}, not: {}.".format(
-                        reaction.rateunits, units))
+                        anon.rateunits, units))
         return anon
 
     raise PilFormatError('unknown keyword: {}'.format(line[0]))

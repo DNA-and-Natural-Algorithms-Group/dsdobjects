@@ -1066,22 +1066,20 @@ class DSD_Macrostate(object):
                 other = DSD_Macrostate.MEMORY[self.canonical_form]
                 if other != self :
                     error = DSDObjectsError(
-                            'Conflicting Macrostate Assignment: {} and {}.'.format(
-                                self, other))
+                            f'Conflicting Macrostate Assignment: {self} and {other}.')
                     error.existing = other
                     raise error
                 else :
-                    error = DSDDuplicationError('Duplicate Macrostate specification:', 
-                            self, other)
+                    error = DSDDuplicationError(
+                            f'Duplicate Macrostate specification: {self} and {other}') 
                     error.existing = other
                     raise error
             elif self._name in DSD_Macrostate.NAMES:
-                raise DSDObjectsError('Duplicate Macrostate name!', self._name)
+                raise DSDObjectsError(f'Duplicate Macrostate name: {self._name}')
             else :
                 for canon in map(lambda x: x.canonical_form, self._complexes):
                     DSD_Macrostate.MEMORY[canon] = self
                 DSD_Macrostate.NAMES[self._name] = self.canonical_form
-
 
     @property
     def name(self):
@@ -1101,14 +1099,6 @@ class DSD_Macrostate(object):
         element. (sorted by canonical forms)
         """
         return self._canonical_cplx.name
-
-    @property
-    def canonical(self):
-        """
-        See ``canonical_name``.
-        """
-        print("DEPRECATION WARNING: use DSD_Macrostate.canonical_complex.")
-        return self.canonical_complex
 
     @property
     def canonical_complex(self):
@@ -1135,9 +1125,7 @@ class DSD_Macrostate(object):
         return str(self.name)
 
     def __eq__(self, other):
-        """
-        Two resting sets are equal if their complexes are equal
-        """
+        """ Two resting sets are equal if their complexes are equal """
         return (self.complexes == other.complexes)
 
     def __ne__(self, other):
@@ -1198,10 +1186,12 @@ class DSD_Reaction(object):
         self._products = products
         self._rtype = rtype
 
-        if rate is None or isinstance(rate, DSD_Reaction.Rate):
-            self._rate = rate 
+        if rate is None:
+            self._rate = None
+        elif isinstance(rate, DSD_Reaction.Rate):
+            self.rate = rate 
         else: 
-            self._rate = DSD_Reaction.Rate(rate, ['M'] * (self.arity[0] - 1) + ['s']) 
+            self.rate = DSD_Reaction.Rate(rate, ['M'] * (self.arity[0] - 1) + ['s']) 
         
         # Used for __eq__ 
         self._canonical_form = None
@@ -1224,6 +1214,8 @@ class DSD_Reaction(object):
     def rate(self, value):
         """Set reaction rate constant and units."""
         assert isinstance(value, DSD_Reaction.Rate)
+        if '/' in value.units or len(value.units) != self.arity[0]:
+            raise DSDObjectsError('Rate units specification error!')
         self._rate = value
 
     @property
@@ -1468,10 +1460,4 @@ class DSD_StrandOrder(object):
 
     def __hash__(self):
         return hash(self.canonical_form)
-
-# Deprecated
-class DSD_RestingSet(DSD_Macrostate):
-    def __init__(self, *kargs, **kwargs):
-        print("DEPRECATION WARNING: DSD_RestingSet is now called DSD_Macrostate.")
-        super(DSD_RestingSet, self).__init__(*kargs, **kwargs)
 

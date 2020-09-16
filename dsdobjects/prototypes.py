@@ -22,7 +22,7 @@ from dsdobjects.core import DSDObjectsError, DSDDuplicationError
 from dsdobjects.core import SequenceConstraint # just pass it on ...
 from dsdobjects.core import DL_Domain, SL_Domain 
 from dsdobjects.core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
-from dsdobjects.utils import split_complex, natural_sort, convert_units
+from dsdobjects.utils import split_complex, natural_sort, convert_units, flint
 
 class LogicDomain(DL_Domain):
     """
@@ -147,6 +147,7 @@ class Complex(DSD_Complex):
         else:
             (mode, value, unit) = trip
             assert isinstance(value, (int, float))
+            value = flint(value)
             mode = 'initial' if mode[0] == 'i' else 'constant'
             self._concentration = Complex.CONCENTRATION(mode, value, unit)
 
@@ -155,7 +156,7 @@ class Complex(DSD_Complex):
         mod = self._concentration.mode
         val = self._concentration.value
         uni = self._concentration.unit
-        val = convert_units(val, uni, out) 
+        val = flint(convert_units(val, uni, out))
         return Complex.CONCENTRATION(mod, val, out)
 
     @property
@@ -204,8 +205,8 @@ class Reaction(DSD_Reaction):
                 del DSD_Reaction.MEMORY[self.canonical_form]
             except KeyError:
                 pass
-            raise DSDObjectsError('Reaction type not supported! ' + 
-            'Set supported reaction types using Reaction.RTYPES')
+            raise DSDObjectsError('Reaction type not supported!',
+                    'Set supported reaction types using Reaction.RTYPES')
 
     def full_string(self, molarity='M', time='s'):
         """Prints the reaction in PIL format.

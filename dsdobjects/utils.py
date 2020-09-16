@@ -21,6 +21,12 @@ class DSDUtilityError(Exception):
             self.message = message
         super(DSDUtilityError, self).__init__(self.message)
 
+def flint(inp):
+    try:
+        return int(inp) if float(inp) == int(float(inp)) else float(inp)
+    except OverflowError:
+        return inp
+
 def make_pair_table(ss, strand_break='+', ignore=set('.')):
     """Return a secondary struture in form of pair table:
 
