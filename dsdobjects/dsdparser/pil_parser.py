@@ -1,21 +1,14 @@
 #
-# dsdobjects.parser.pil_extended_format
-#   - copy and/or modify together with tests/test_pil_parser.py
+# Parser module for the PIL "Pepper Internal Language" specification of DSD systems.
+# dsdobjects.dsdparser.pil_parser.py
+#   - copy and/or modify together with tests/dsdparser/test_pil_parser.py
 #
-# Written by Stefan Badelt (badelt@caltech.edu)
-#
-# Distributed under the MIT License, use at your own risk.
-#
-
 from pyparsing import (Word, Literal, Group, Suppress, Optional, ZeroOrMore,
         Combine, White, OneOrMore, alphas, alphanums, nums, delimitedList,
         StringStart, StringEnd, Forward, LineEnd, pythonStyleComment,
         ParseElementEnhance)
 
-class PilFormatError(Exception):
-    pass
-
-def pil_extended_setup():
+def pil_document_setup():
     crn_DWC = "".join(
         [x for x in ParseElementEnhance.DEFAULT_WHITE_CHARS if x != "\n"])
     ParseElementEnhance.setDefaultWhitespaceChars(crn_DWC)
@@ -102,10 +95,10 @@ def pil_extended_setup():
     return document
 
 def parse_pil_file(data):
-    document = pil_extended_setup()
+    document = pil_document_setup()
     return document.parseFile(data).asList()
 
 def parse_pil_string(data):
-    document = pil_extended_setup()
+    document = pil_document_setup()
     return document.parseString(data).asList()
 

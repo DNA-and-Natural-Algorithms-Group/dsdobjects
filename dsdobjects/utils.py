@@ -2,10 +2,6 @@
 # dsdobjects/utils.py
 #   - copy and/or modify together with tests/test_utils.py
 #
-# Written by Stefan Badelt (badelt@caltech.edu)
-#
-# Distributed under the MIT License, use at your own risk.
-#
 import re
 from functools import reduce
 

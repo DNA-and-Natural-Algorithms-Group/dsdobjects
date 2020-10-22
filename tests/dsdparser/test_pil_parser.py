@@ -1,14 +1,10 @@
-# -*- coding: utf-8 -*-
 #
-# tests for dsdobjects.parser.pil_extended_format
+# tests for dsdobjects.dsdparser.pil_parser.py
 #
-# Written by Stefan Badelt (badelt@caltech.edu)
-#
-
 import unittest
 from pyparsing import ParseException
 
-from dsdobjects.parser import parse_pil_file, parse_pil_string
+from dsdobjects.dsdparser import parse_pil_file, parse_pil_string
 
 SKIP = False
 

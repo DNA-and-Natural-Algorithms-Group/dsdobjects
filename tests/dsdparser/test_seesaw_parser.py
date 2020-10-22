@@ -1,13 +1,9 @@
-# -*- coding: utf-8 -*-
 #
-# tests for dsdobjects.parser.seesaw_format.py
+# tests for dsdobjects.dsdparser.seesaw_parser.py
 #
-# Written by Stefan Badelt (badelt@caltech.edu)
-#
-
 import unittest
 from pyparsing import ParseException
-from dsdobjects.parser import parse_seesaw_string, parse_seesaw_file
+from dsdobjects.dsdparser import parse_seesaw_string, parse_seesaw_file
 
 class TestSeeSawParser(unittest.TestCase):
     def setUp(self):

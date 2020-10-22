@@ -1,8 +1,6 @@
 #
 # dsdobjects/core/base_classes.py
-#   - copy and/or modify together with tests/test_base_classes.py
-#
-# Written by Stefan Badelt (badelt@caltech.edu)
+#   - copy and/or modify together with tests/core/test_base_classes.py
 #
 #  Contributions:
 #  This file contains adapted code from various related Python packages
@@ -13,14 +11,11 @@
 #
 # Distributed under the MIT License, use at your own risk.
 #
-
-# Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 import logging
 log = logging.getLogger(__name__)
 
 from collections import namedtuple
+from abc import ABCMeta, abstractmethod
 
 import dsdobjects.utils as utils
 
@@ -90,7 +85,7 @@ class DSDDuplicationError(Exception):
         """
         self._rotations = value
 
-class SequenceConstraint(object):
+class SequenceConstraint:
     """ 
     A nucleic acid sequence constraint in IUPAC format.
 
@@ -301,7 +296,7 @@ def clear_memory():
     DSD_Macrostate.MEMORY = dict()
     DSD_Reaction.MEMORY = dict()
 
-class ABC_Domain(object):
+class ABC_Domain:
     """Abstract base class - domain"""
 
     def __init__(self):
@@ -617,7 +612,7 @@ class SL_Domain(ABC_Domain):
     def __hash__(self):
         return hash(self.name)
 
-class DSD_Complex(object):
+class DSD_Complex:
     """A sequence and structure pair.
 
     Other than domains, Complexes don't need the memory management, but it is
@@ -1031,8 +1026,7 @@ class DSD_Complex(object):
         else:
             return self.__add__(other)
 
-
-class DSD_Macrostate(object):
+class DSD_Macrostate:
     """
     A set of complexes.
     """
@@ -1161,7 +1155,7 @@ class DSD_Macrostate(object):
         else:
             return self.__add__(other)
 
-class DSD_Reaction(object):
+class DSD_Reaction:
     """ A reaction pathway.
 
     Args:
@@ -1308,7 +1302,7 @@ class DSD_Reaction(object):
     def __hash__(self):
         return hash(self.canonical_form)
 
-class DSD_StrandOrder(object):
+class DSD_StrandOrder:
     """ A single strand, or a list of strands in specific order.
 
     Cyclic permutations of a strand order are equivalent.

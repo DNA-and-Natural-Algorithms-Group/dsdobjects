@@ -2,25 +2,19 @@
 # dsdobjects/objectio.py
 #   - copy and/or modify together with tests/test_objectio.py
 #
-# Written by Stefan Badelt (badelt@caltech.edu)
-#
-# Distributed under the MIT License, use at your own risk.
-#
-from __future__ import absolute_import, division, print_function
-
 import logging
 log = logging.getLogger(__name__)
 
 # Memorymanagement
-from dsdobjects.core import clear_memory
-from dsdobjects.core import DSDObjectsError, DSDDuplicationError
-from dsdobjects.core import DL_Domain, SL_Domain 
-from dsdobjects.core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
+from .core import clear_memory
+from .core import DSDObjectsError, DSDDuplicationError
+from .core import DL_Domain, SL_Domain 
+from .core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
 
 # Parsing and utils
-from dsdobjects.utils import resolve_loops
-from dsdobjects.parser import parse_seesaw_string, parse_seesaw_file
-from dsdobjects.parser import parse_pil_string, parse_pil_file, PilFormatError
+from .utils import resolve_loops
+from .dsdparser import parse_seesaw_string, parse_seesaw_file
+from .dsdparser import parse_pil_string, parse_pil_file
 
 LogicDomain = None
 Domain = None
@@ -48,6 +42,9 @@ def set_prototypes(): # Replace all objects with prototypes
     Macrostate = M
 
 class MissingObjectError(Exception):
+    pass
+
+class PilFormatError(Exception):
     pass
 
 # ---- Load prototype objects ---- #

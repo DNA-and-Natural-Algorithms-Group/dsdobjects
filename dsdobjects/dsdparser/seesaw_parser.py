@@ -1,15 +1,10 @@
 #
-# Parser module for Seesaw Compiler specification of DSD cirucits.
+# Parser module for Seesaw compiler specification of DSD cirucits.
 # http://www.qianlab.caltech.edu/SeesawCompiler/
 #
-# dsdobjects.parser.seesaw_format
-#   - copy and/or modify together with tests/test_seesaw_parser.py
+# dsdobjects.dsdparser.seesaw_parser.py
+#   - copy and/or modify together with tests/dsdparser/test_seesaw_parser.py
 #
-# Written by Stefan Badelt (badelt@caltech.edu)
-#
-# Distributed under the MIT License, use at your own risk.
-#
-
 from pyparsing import (Word, Literal, Group, Suppress, Optional, ZeroOrMore, Combine, 
     OneOrMore, alphas, alphanums, nums, delimitedList, StringStart, StringEnd, 
     LineEnd, pythonStyleComment, ParseElementEnhance)

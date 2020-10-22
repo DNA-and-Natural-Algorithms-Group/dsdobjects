@@ -2,27 +2,16 @@
 # dsdobjects/prototypes.py
 #   - copy and/or modify together with tests/test_prototypes.py
 #
-# Written by Stefan Badelt (badelt@caltech.edu)
-#
-# Distributed under the MIT License, use at your own risk.
-#
-# Commonly useful DSD object definitions.
-#   - functionality from here may be incorporated into base_classes if generally useful.
-#   - you should be able to copy that file as is into your project if you need custom changes.
-#   - please consider providing thoughts about missing functionality
-#
-from __future__ import absolute_import, division, print_function
-
 import logging
 log = logging.getLogger(__name__)
 
 from collections import namedtuple
 
-from dsdobjects.core import DSDObjectsError, DSDDuplicationError
-from dsdobjects.core import SequenceConstraint # just pass it on ...
-from dsdobjects.core import DL_Domain, SL_Domain 
-from dsdobjects.core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
-from dsdobjects.utils import split_complex, natural_sort, convert_units, flint
+from .core import DSDObjectsError, DSDDuplicationError
+from .core import SequenceConstraint # just pass it on ...
+from .core import DL_Domain, SL_Domain 
+from .core import DSD_Complex, DSD_Reaction, DSD_Macrostate, DSD_StrandOrder
+from .utils import split_complex, natural_sort, convert_units, flint
 
 class LogicDomain(DL_Domain):
     """
