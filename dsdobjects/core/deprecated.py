@@ -1,6 +1,8 @@
 #
 # dsdobjects/core/base_classes.py
-#   - copy and/or modify together with tests/core/test_base_classes.py
+#   - copy and/or modify together with tests/test_base_classes.py
+#
+# Written by Stefan Badelt (badelt@caltech.edu)
 #
 #  Contributions:
 #  This file contains adapted code from various related Python packages
@@ -12,12 +14,12 @@
 # Distributed under the MIT License, use at your own risk.
 #
 import logging
-log = logging.getLogger(__name__)
+import warnings
 
 from collections import namedtuple
-from abc import ABCMeta, abstractmethod
 
-import dsdobjects.utils as utils
+from dsdobjects.utils import convert_units, make_lol_sequence, make_pair_table, make_loop_index
+from dsdobjects.complex_utils import SecondaryStructureError
 
 class DSDObjectsError(Exception):
     """
@@ -25,6 +27,7 @@ class DSDObjectsError(Exception):
     """
 
     def __init__(self, message, *kargs):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
         if kargs:
             self.message = "{} [{}]".format(message, ', '.join(map(str,kargs)))
         else :
@@ -49,6 +52,7 @@ class DSDDuplicationError(Exception):
     be used directly by child classes, instead of initializing a new object.
     """
     def __init__(self, message, *kargs):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
         if kargs:
             self.message = "{} [{}]".format(message, ', '.join(map(str,kargs)))
         else :
@@ -85,7 +89,7 @@ class DSDDuplicationError(Exception):
         """
         self._rotations = value
 
-class SequenceConstraint:
+class SequenceConstraint(object):
     """ 
     A nucleic acid sequence constraint in IUPAC format.
 
@@ -95,6 +99,7 @@ class SequenceConstraint:
             to "DNA".
     """
     def __init__(self, sequence, molecule='DNA'):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
         assert molecule == 'DNA' or molecule == 'RNA'
         self.ToU = 'T' if molecule == 'DNA' else 'U'
 
@@ -215,7 +220,7 @@ class SequenceConstraint:
             'M': 'K',       # 1100 => 0011
             'W': 'D',       # 1001 => 1011
             'K': 'N',       # 0011 => 1111
-            'V': 'B',       # 1110 => 0111
+            'V': 'B',       # 1110 => 011   1
             'H': 'D',       # 1101 => 1011
             'D': 'N',       # 1011 => 1111
             'B': 'N',       # 0111 => 1111
@@ -296,10 +301,11 @@ def clear_memory():
     DSD_Macrostate.MEMORY = dict()
     DSD_Reaction.MEMORY = dict()
 
-class ABC_Domain:
+class ABC_Domain(object):
     """Abstract base class - domain"""
 
     def __init__(self):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
         super(ABC_Domain, self).__init__()
 
     @property
@@ -396,6 +402,7 @@ class DL_Domain(ABC_Domain):
     MEMORY = dict()
 
     def __init__(self, name, dtype=None, length=None):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
         if dtype not in set(['short', 'long', None]):
             raise DSDObjectsError('Cannot interpret dtype:', dtype)
         if length: assert isinstance(length, int)
@@ -503,6 +510,7 @@ class SL_Domain(ABC_Domain):
     MEMORY = dict(dict())
 
     def __init__(self, dtype, sequence, variant=''):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
         assert isinstance(dtype, DL_Domain)
         self._dtype = dtype
         self._sequence = self.enforce_constraints(sequence)
@@ -612,7 +620,7 @@ class SL_Domain(ABC_Domain):
     def __hash__(self):
         return hash(self.name)
 
-class DSD_Complex:
+class DSD_Complex(object):
     """A sequence and structure pair.
 
     Other than domains, Complexes don't need the memory management, but it is
@@ -647,6 +655,7 @@ class DSD_Complex:
     MEMORY = dict() # MEMORY[canonical_form] = self
 
     def __init__(self, sequence, structure, name='', prefix='cplx', memorycheck=True):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
         # Assign name
         if name:
             self._name = name
@@ -754,7 +763,7 @@ class DSD_Complex:
         """Size of the complex is the number of strands."""
         if not self._strand_lengths :
             if not self._lol_sequence:
-                self._lol_sequence = utils.make_lol_sequence(self._sequence)
+                self._lol_sequence = make_lol_sequence(self._sequence)
             self._strand_lengths = list(map(len, self._lol_sequence))
         return len(self._strand_lengths)
  
@@ -767,7 +776,7 @@ class DSD_Complex:
     def strand_length(self, pos):
         if not self._strand_lengths :
             if not self._lol_sequence:
-                self._lol_sequence = utils.make_lol_sequence(self._sequence)
+                self._lol_sequence = make_lol_sequence(self._sequence)
             self._strand_lengths = list(map(len, self._lol_sequence))
         return self._strand_lengths[pos]
  
@@ -873,15 +882,15 @@ class DSD_Complex:
     def pair_table(self):
         """ returns a structure in multistranded pair-table format. """
         # Make a new pair_table every time, it might get modified.
-        return utils.make_pair_table(self.structure)
+        return make_pair_table(self.structure)
 
 
     @property
     def loop_index(self):
         """ returns the loop index of a structure. """
         if not self._pair_table:
-            self._pair_table = utils.make_pair_table(self.structure)
-        return utils.make_loop_index(self._pair_table)
+            self._pair_table = make_pair_table(self.structure)
+        return make_loop_index(self._pair_table)
 
     @property
     def lol_sequence(self):
@@ -890,18 +899,18 @@ class DSD_Complex:
          Example:
           ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
         """
-        return utils.make_lol_sequence(self._sequence)
+        return make_lol_sequence(self._sequence)
 
     def get_loop_index(self, loc):
         if not self._pair_table:
-            self._pair_table = utils.make_pair_table(self.structure)
+            self._pair_table = make_pair_table(self.structure)
         if not self._loop_index:
-            self._loop_index, self._exterior_loops = utils.make_loop_index(self._pair_table)
+            self._loop_index, self._exterior_loops = make_loop_index(self._pair_table)
         return self._loop_index[loc[0]][loc[1]]
 
     def get_domain(self, loc):
         if not self._lol_sequence:
-            self._lol_sequence = utils.make_lol_sequence(self._sequence)
+            self._lol_sequence = make_lol_sequence(self._sequence)
         return self._lol_sequence[loc[0]][loc[1]]
     
     def get_paired_loc(self, loc):
@@ -912,7 +921,7 @@ class DSD_Complex:
         if loc[0] < 0 or loc[1] < 0:
             raise IndexError
         if not self._pair_table:
-            self._pair_table = utils.make_pair_table(self.structure)
+            self._pair_table = make_pair_table(self.structure)
         return self._pair_table[loc[0]][loc[1]]
 
     @property
@@ -930,9 +939,9 @@ class DSD_Complex:
         """
         if not self._exterior_domains:
             if not self._pair_table:
-                self._pair_table = utils.make_pair_table(self.structure)
+                self._pair_table = make_pair_table(self.structure)
             if not self._loop_index or self._exterior_loops:
-                self._loop_index, self._exterior_loops = utils.make_loop_index(self._pair_table)
+                self._loop_index, self._exterior_loops = make_loop_index(self._pair_table)
 
             self._exterior_domains = []
             self._enclosed_domains = []
@@ -955,7 +964,7 @@ class DSD_Complex:
         TODO: breaks if used on strings, due to the inverse operator
         """
         if not self._pair_table:
-            self._pair_table = utils.make_pair_table(self.structure)
+            self._pair_table = make_pair_table(self.structure)
         for si, strand in enumerate(self._pair_table):
             for di, domain in enumerate(strand):
                 loc = (si,di)
@@ -968,12 +977,12 @@ class DSD_Complex:
     @property
     def is_connected(self):
         if not self._pair_table:
-            self._pair_table = utils.make_pair_table(self.structure)
+            self._pair_table = make_pair_table(self.structure)
         if not self._loop_index:
             try :
                 # make loop index raises error when disconnected.
-                self._loop_index, self._exterior_loops = utils.make_loop_index(self._pair_table)
-            except utils.DSDUtilityError as e:
+                self._loop_index, self._exterior_loops = make_loop_index(self._pair_table)
+            except SecondaryStructureError as e:
                 return False
         return True
 
@@ -1026,7 +1035,7 @@ class DSD_Complex:
         else:
             return self.__add__(other)
 
-class DSD_Macrostate:
+class DSD_Macrostate(object):
     """
     A set of complexes.
     """
@@ -1036,6 +1045,7 @@ class DSD_Macrostate:
 
     def __init__(self, complexes, name='', prefix='r', 
             representative=None, memorycheck=True):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
 
         # Resting sets store complexes in canonical form?
         assert len(set(complexes)) == len(complexes)
@@ -1155,7 +1165,7 @@ class DSD_Macrostate:
         else:
             return self.__add__(other)
 
-class DSD_Reaction:
+class DSD_Reaction(object):
     """ A reaction pathway.
 
     Args:
@@ -1173,6 +1183,7 @@ class DSD_Reaction:
     Rate = namedtuple('rate', 'constant units')
 
     def __init__(self, reactants, products, rtype=None, rate=None, memorycheck=True):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
         if not(all(isinstance(c, 
             (DSD_Complex, DSD_Macrostate)) for c in reactants + products)):
             raise DSDObjectsError('Reactants and products must be DSD Objects')
@@ -1232,7 +1243,7 @@ class DSD_Reaction:
         assert isinstance(output_units, list)
         newc = self.const
         for i,o in zip(self._rate.units, output_units):
-            newc = utils.convert_units(newc, o, i) # 1/M 1/s
+            newc = convert_units(newc, o, i) # 1/M 1/s
         return DSD_Reaction.Rate(newc, output_units)
 
     @property
@@ -1302,7 +1313,7 @@ class DSD_Reaction:
     def __hash__(self):
         return hash(self.canonical_form)
 
-class DSD_StrandOrder:
+class DSD_StrandOrder(object):
     """ A single strand, or a list of strands in specific order.
 
     Cyclic permutations of a strand order are equivalent.
@@ -1317,6 +1328,7 @@ class DSD_StrandOrder:
 
     # Canonical form for strand order
     def __init__(self, sequence, name='', prefix='StrandOrder_', memorycheck=True):
+        warnings.warn('dsdobjects: deprecated import "dsdobjects.core" use "dsdobjects"')
 
         # Assign name
         if name:
@@ -1386,7 +1398,7 @@ class DSD_StrandOrder:
         if not self._canonical_form:
             all_variants = dict()
             if not self._lol_sequence:
-                self._lol_sequence = utils.make_lol_sequence(self._sequence)
+                self._lol_sequence = make_lol_sequence(self._sequence)
             for e in range(0, self.size):
                 canon = tuple(map(lambda x: tuple(map(str, x)), 
                     self._lol_sequence[e:] + self._lol_sequence[:e]))
@@ -1410,7 +1422,7 @@ class DSD_StrandOrder:
          Example:
           ['d1', 'd2', '+', 'd3'] ==> [['d1', 'd2'], ['d3']]
         """
-        return utils.make_lol_sequence(self._sequence)
+        return make_lol_sequence(self._sequence)
 
     def do_memorycheck(self, current = None, rotations=None):
         if current is None: 

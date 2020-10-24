@@ -1,30 +1,25 @@
 #
-# tests for dsdobjects.core.base_classes.py
+# tests for dsdobjects.core.base_classes
 #
+# Written by Stefan Badelt (badelt@caltech.edu)
+#
+
 import unittest
 
-from dsdobjects.core import (DSDObjectsError,
-                             DSDDuplicationError,
-                             clear_memory,
-                             SequenceConstraint,
-                             DL_Domain, 
-                             SL_Domain, 
-                             DSD_Complex,
-                             DSD_StrandOrder,
-                             DSD_Macrostate,
-                             DSD_Reaction)
+import dsdobjects.core as bc
+
 SKIP = False
 
-class DummyDomain(DL_Domain):
+class DummyDomain(bc.DL_Domain):
     # inherit and change the global variables ...
     # btw. doing it like this can cause troubles, if you
     # have multiple objects that get initialized like this,
-    # they will all modify the DL_Domain... 
-    DL_Domain.DTYPE_CUTOFF = 7
-    DL_Domain.SHORT_DOM_LEN = 6
-    DL_Domain.LONG_DOM_LEN = 15
+    # they will all modify the bc.DL_Domain... 
+    bc.DL_Domain.DTYPE_CUTOFF = 7
+    bc.DL_Domain.SHORT_DOM_LEN = 6
+    bc.DL_Domain.LONG_DOM_LEN = 15
 
-    DL_Domain.MEMORY = dict()
+    bc.DL_Domain.MEMORY = dict()
 
     def __init__(self, *kargs, **kwargs):
         super(DummyDomain, self).__init__(*kargs, **kwargs)
@@ -34,8 +29,8 @@ class DummyDomain(DL_Domain):
         # If we initialize the complement, we need to know the class.
         if self._complement is None:
             cname = self._name[:-1] if self.is_complement else self._name + '*'
-            if cname in DL_Domain.MEMORY:
-                self._complement = DL_Domain.MEMORY[cname]
+            if cname in bc.DL_Domain.MEMORY:
+                self._complement = bc.DL_Domain.MEMORY[cname]
             else :
                 self._complement = DummyDomain(cname, self.dtype, self.length)
         return self._complement
@@ -54,20 +49,20 @@ class Test_SequenceConstraint(unittest.TestCase):
         self.seq6 = 'TGYRTYRRG'
         self.seq7 = reversed('TGYRTYRRG')
 
-        con1 = SequenceConstraint(self.seq1)
-        con2 = SequenceConstraint(self.seq2)
-        con3 = SequenceConstraint(self.seq3)
-        con4 = SequenceConstraint(self.seq4)
-        con5 = SequenceConstraint(self.seq5)
-        con6 = SequenceConstraint(self.seq6)
-        con7 = SequenceConstraint(self.seq7)
+        con1 = bc.SequenceConstraint(self.seq1)
+        con2 = bc.SequenceConstraint(self.seq2)
+        con3 = bc.SequenceConstraint(self.seq3)
+        con4 = bc.SequenceConstraint(self.seq4)
+        con5 = bc.SequenceConstraint(self.seq5)
+        con6 = bc.SequenceConstraint(self.seq6)
+        con7 = bc.SequenceConstraint(self.seq7)
 
         self.assertEqual(con1, con1 + con2)
 
         self.assertEqual('AAAAAAAAA', str(con3 + con4))
         self.assertEqual(con5, con3 + con4)
 
-        with self.assertRaises(DSDObjectsError):
+        with self.assertRaises(bc.DSDObjectsError):
             con1 + con3
 
         self.assertEqual(str(con2), con2.complement)
@@ -76,45 +71,45 @@ class Test_SequenceConstraint(unittest.TestCase):
         self.assertEqual(len(con1), 9)
 
 @unittest.skipIf(SKIP, "skipping tests")
-class Test_DL_Domain(unittest.TestCase):
+class DL_Domain_Test(unittest.TestCase):
     def setUp(self): 
         pass
 
     def tearDown(self): 
-        clear_memory()
+        bc.clear_memory()
 
     def test_initialization_memory(self):
-        self.assertDictEqual(DL_Domain.MEMORY, dict())
-        with self.assertRaises(DSDObjectsError):
-            foo = DL_Domain('foo')
-        with self.assertRaises(DSDObjectsError):
-            foo = DL_Domain('foo', dtype = 'blubb')
-        with self.assertRaises(DSDObjectsError):
-            foo = DL_Domain('foo', dtype = 'long', length = 5)
-        self.assertDictEqual(DL_Domain.MEMORY, dict())
+        self.assertDictEqual(bc.DL_Domain.MEMORY, dict())
+        with self.assertRaises(bc.DSDObjectsError):
+            foo = bc.DL_Domain('foo')
+        with self.assertRaises(bc.DSDObjectsError):
+            foo = bc.DL_Domain('foo', dtype = 'blubb')
+        with self.assertRaises(bc.DSDObjectsError):
+            foo = bc.DL_Domain('foo', dtype = 'long', length = 5)
+        self.assertDictEqual(bc.DL_Domain.MEMORY, dict())
 
     def test_domain_length(self):
-        foo = DL_Domain('foo', dtype = 'short')
-        with self.assertRaises(DSDDuplicationError):
-            bar = DL_Domain('foo', dtype = 'long')
-        bar = DL_Domain('bar', dtype = 'long')
+        foo = bc.DL_Domain('foo', dtype = 'short')
+        with self.assertRaises(bc.DSDDuplicationError):
+            bar = bc.DL_Domain('foo', dtype = 'long')
+        bar = bc.DL_Domain('bar', dtype = 'long')
 
-        self.assertEqual(len(foo), DL_Domain.SHORT_DOM_LEN)
-        self.assertEqual(len(bar), DL_Domain.LONG_DOM_LEN)
+        self.assertEqual(len(foo), bc.DL_Domain.SHORT_DOM_LEN)
+        self.assertEqual(len(bar), bc.DL_Domain.LONG_DOM_LEN)
 
-        foo2 = DL_Domain('foo2', length = DL_Domain.DTYPE_CUTOFF)
-        bar2 = DL_Domain('bar2', length = DL_Domain.DTYPE_CUTOFF+1)
+        foo2 = bc.DL_Domain('foo2', length = bc.DL_Domain.DTYPE_CUTOFF)
+        bar2 = bc.DL_Domain('bar2', length = bc.DL_Domain.DTYPE_CUTOFF+1)
 
         self.assertEqual(foo2.dtype, 'short')
         self.assertEqual(bar2.dtype, 'long')
 
     def test_complementarity(self):
-        foo = DL_Domain('foo', length = 7)
+        foo = bc.DL_Domain('foo', length = 7)
         
-        with self.assertRaises(DSDObjectsError):
+        with self.assertRaises(bc.DSDObjectsError):
             fooC = ~foo
 
-        fooC= DL_Domain('foo*', length = 7)
+        fooC= bc.DL_Domain('foo*', length = 7)
 
         self.assertTrue(foo == ~fooC)
 
@@ -142,42 +137,42 @@ class Test_DL_Domain(unittest.TestCase):
         self.assertTrue(x is fooC)
 
     def test_not_implemented(self):
-        foo = DL_Domain('foo', dtype = 'short')
-        bar = DL_Domain('bar', dtype = 'long')
+        foo = bc.DL_Domain('foo', dtype = 'short')
+        bar = bc.DL_Domain('bar', dtype = 'long')
         with self.assertRaises(NotImplementedError):
             foobar = foo + bar
 
 
 @unittest.skipIf(SKIP, "skipping tests")
-class Test_SL_Domain(unittest.TestCase):
+class SL_Domain_Test(unittest.TestCase):
     def setUp(self): 
         self.foo = DummyDomain('foo', length = 7)
         self.bar = DummyDomain('bar', length = 10)
 
     def tearDown(self): 
-        clear_memory()
+        bc.clear_memory()
 
     def test_initialization(self):
-        foo = SL_Domain(self.foo, 'HHHHHHH')
-        foo1 = SL_Domain(self.foo, 'HHHHHHH', variant='1')
-        foo2 = SL_Domain(self.foo, 'NNNNNNN', variant='2')
+        foo = bc.SL_Domain(self.foo, 'HHHHHHH')
+        foo1 = bc.SL_Domain(self.foo, 'HHHHHHH', variant='1')
+        foo2 = bc.SL_Domain(self.foo, 'NNNNNNN', variant='2')
         
         self.assertTrue(foo.is_logic(foo1))
         self.assertFalse(foo == foo1)
         self.assertFalse(foo is foo1)
 
-        with self.assertRaises(DSDObjectsError):
+        with self.assertRaises(bc.DSDObjectsError):
             bar = ~foo
 
         self.assertEqual(sorted(foo.variants), sorted([foo, foo1, foo2]))
         self.assertEqual(foo.length, 7)
         self.assertEqual(len(foo), 7)
 
-        with self.assertRaises(DSDObjectsError):
-            foC = SL_Domain(~self.foo, 'N')
+        with self.assertRaises(bc.DSDObjectsError):
+            foC = bc.SL_Domain(~self.foo, 'N')
 
         # Initialize a vaild complement domain.
-        foC = SL_Domain(~self.foo, 'NNNNNNN')
+        foC = bc.SL_Domain(~self.foo, 'NNNNNNN')
         self.assertEqual(foC.variants, [foC])
         # Get all complements
         self.assertEqual(sorted(~foC), sorted([foo, foo1, foo2]))
@@ -186,13 +181,14 @@ class Test_SL_Domain(unittest.TestCase):
         self.assertEqual(~foo2, [foC])
 
     def test_not_implemented(self):
-        foo1 = SL_Domain(self.foo, 'HHHHHHH', variant='1')
-        foo2 = SL_Domain(self.foo, 'NNNNNNN', variant='2')
+        foo1 = bc.SL_Domain(self.foo, 'HHHHHHH', variant='1')
+        foo2 = bc.SL_Domain(self.foo, 'NNNNNNN', variant='2')
         with self.assertRaises(NotImplementedError):
             foobar = foo1 + foo2
 
+
 @unittest.skipIf(SKIP, "skipping tests")
-class Test_DSD_Complex(unittest.TestCase):
+class DSD_ComplexObjectTest(unittest.TestCase):
     def setUp(self):
         self.d1 = DummyDomain('d1', length=5)
         self.d2 = DummyDomain('d2', length=5)
@@ -202,15 +198,15 @@ class Test_DSD_Complex(unittest.TestCase):
         self.d3c = ~self.d3
 
     def tearDown(self):
-        clear_memory()
+        bc.clear_memory()
 
     def test_DSD_ComplexInit(self):
-        foo = DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'), name='a')
-        with self.assertRaises(DSDDuplicationError):
-            bar = DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'), name='a')
-        with self.assertRaises(DSDObjectsError):
-            bar = DSD_Complex(sequence=list('RNANY'), structure=list('(...)'), name='a')
-        self.assertIsInstance(foo, DSD_Complex)
+        foo = bc.DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'), name='a')
+        with self.assertRaises(bc.DSDDuplicationError):
+            bar = bc.DSD_Complex(sequence=list('RNNNY'), structure=list('(...)'), name='a')
+        with self.assertRaises(bc.DSDObjectsError):
+            bar = bc.DSD_Complex(sequence=list('RNANY'), structure=list('(...)'), name='a')
+        self.assertIsInstance(foo, bc.DSD_Complex)
 
         self.assertEqual(foo.sequence, list('RNNNY'))
         self.assertEqual(foo.structure, list('(...)'))
@@ -221,7 +217,7 @@ class Test_DSD_Complex(unittest.TestCase):
             self.assertEqual(r.structure, list('(...)'))
 
     def test_DSD_ComplexDomains(self):
-        foo = DSD_Complex(sequence=
+        foo = bc.DSD_Complex(sequence=
                 [self.d1, self.d2, self.d3, '+', self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2],
                 structure=list('..(+(+))..'))
 
@@ -230,8 +226,8 @@ class Test_DSD_Complex(unittest.TestCase):
         self.assertEqual(foo.lol_sequence, 
                 [[self.d1, self.d2, self.d3], [self.d1], [self.d1c, self.d3c, self.d1c, self.d2]])
 
-        clear_memory()
-        bar = DSD_Complex(sequence=
+        bc.clear_memory()
+        bar = bc.DSD_Complex(sequence=
                 [self.d1c, self.d3c, self.d1c, self.d2, '+', self.d1, self.d2, self.d3, '+', self.d1], 
                 structure=list('((..+..)+)'))
 
@@ -239,11 +235,11 @@ class Test_DSD_Complex(unittest.TestCase):
         self.assertTrue(foo == bar)
 
     def test_properties(self):
-        foo = DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
+        foo = bc.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
             self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], 
             structure=list('..(+(+))..'))
-        with self.assertRaises(DSDDuplicationError):
-            bar = DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
+        with self.assertRaises(bc.DSDDuplicationError):
+            bar = bc.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
                 self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], 
                 structure=list('..(+(+))..'))
 
@@ -285,36 +281,36 @@ class Test_DSD_Complex(unittest.TestCase):
         self.assertEqual(foo.exterior_domains, [(0,0),(0,1),(2,2),(2,3)])
 
     def test_sorting(self):
-        foo = DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+',
+        foo = bc.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+',
             self.d1, '+', self.d1c, self.d3c, self.d1c, self.d3c], structure=list('..(+(+))..'))
-        bar = DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+',
+        bar = bc.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+',
             self.d1, '+', self.d1c, self.d3c, self.d1c, self.d3c], structure=list('..(+(+..))'))
 
         self.assertEqual(sorted([foo, bar]), sorted([bar, foo]))
 
     def test_sanitychecks(self):
-        with self.assertRaises(DSDObjectsError):
+        with self.assertRaises(bc.DSDObjectsError):
             # Unbalanced dot-bracket string
-            foo = DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
+            foo = bc.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
                 self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))).'))
 
-        foo = DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
+        foo = bc.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
             self.d1c, self.d3c, self.d1c, self.d2], structure=list('.((+(+))).'))
 
         self.assertTrue(foo.is_connected)
-        with self.assertRaises(DSDObjectsError):
+        with self.assertRaises(bc.DSDObjectsError):
             foo.is_domainlevel_complement
 
-        foo = DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
+        foo = bc.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+', self.d1, '+', 
             self.d1c, self.d3c, self.d1c, self.d2], structure=list('(.(+.+.)).'))
 
         self.assertTrue(foo.is_domainlevel_complement)
         self.assertFalse(foo.is_connected)
 
     def test_names(self):
-        foo = DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
+        foo = bc.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
             self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('..(+(+))..'))
-        bar = DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
+        bar = bc.DSD_Complex( sequence=[self.d1, self.d2, self.d3, '+',
             self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2], structure=list('(.(+(+))).'))
 
         self.assertEqual(foo.name, 'cplx0')
@@ -322,17 +318,17 @@ class Test_DSD_Complex(unittest.TestCase):
 
         foo.name = 'foo'
         self.assertEqual(foo.name, 'foo')
-        self.assertSetEqual(set(DSD_Complex.NAMES.keys()), set(['foo', 'cplx1']))
+        self.assertSetEqual(set(bc.DSD_Complex.NAMES.keys()), set(['foo', 'cplx1']))
 
         foo.name = 'bar'
         self.assertEqual(foo.name, 'bar')
-        self.assertSetEqual(set(DSD_Complex.NAMES.keys()), set(['bar', 'cplx1']))
+        self.assertSetEqual(set(bc.DSD_Complex.NAMES.keys()), set(['bar', 'cplx1']))
 
-        with self.assertRaises(DSDObjectsError):
+        with self.assertRaises(bc.DSDObjectsError):
             bar.name = 'bar'
 
     def test_rotations(self):
-        foo = DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+',
+        foo = bc.DSD_Complex(sequence=[self.d1, self.d2, self.d3, '+',
             self.d1, '+', self.d1c, self.d3c, self.d1c, self.d2],
                 structure=list('..(+(+))..')) 
         self.assertEqual(foo.rotate_once(), foo)
@@ -358,32 +354,32 @@ class Test_DSD_Complex(unittest.TestCase):
         sequen = [t, d2, d3, '+', d2, d3, '+', ~d3, ~a, '+', ~a, ~b, c, b, a, ~d2, ~t]
         struct = list('(((+..+)(+.(.))))')
 
-        foo = DSD_Complex(sequen, struct)
-        with self.assertRaises(DSDDuplicationError):
-            foo = DSD_Complex(sequen, struct)
+        foo = bc.DSD_Complex(sequen, struct)
+        with self.assertRaises(bc.DSDDuplicationError):
+            foo = bc.DSD_Complex(sequen, struct)
 
 @unittest.skipIf(SKIP, "skipping tests")
-class Test_DSD_Reaction(unittest.TestCase):
+class DSD_ReactionTest(unittest.TestCase):
     def setUp(self):
         pass
 
     def tearDown(self):
-        clear_memory()
+        bc.clear_memory()
 
     def test_initialize(self):
-        with self.assertRaises(DSDObjectsError):
-            x = DSD_Reaction(['A','B','C'],['D','A','E'], rtype = 'branch-3way')
+        with self.assertRaises(bc.DSDObjectsError):
+            x = bc.DSD_Reaction(['A','B','C'],['D','A','E'], rtype = 'branch-3way')
 
-        A = DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
-        B = DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
+        A = bc.DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
+        B = bc.DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
 
-        x = DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
-        with self.assertRaises(DSDDuplicationError):
-            y = DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
+        x = bc.DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
+        with self.assertRaises(bc.DSDDuplicationError):
+            y = bc.DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
 
-        clear_memory()
-        y = DSD_Reaction([A, B],[B, B], rtype = 'branch-3way', rate=.5)
-        z = DSD_Reaction([A],[B], rtype='bind11')
+        bc.clear_memory()
+        y = bc.DSD_Reaction([A, B],[B, B], rtype = 'branch-3way', rate=.5)
+        z = bc.DSD_Reaction([A],[B], rtype='bind11')
 
         self.assertEqual('A + B -> B + B', str(x))
         A.name = 'Z'
@@ -392,8 +388,8 @@ class Test_DSD_Reaction(unittest.TestCase):
 
         self.assertEqual(x, y)
 
-        with self.assertRaises(DSDDuplicationError):
-            y = DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
+        with self.assertRaises(bc.DSDDuplicationError):
+            y = bc.DSD_Reaction([A, B],[B, B], rtype = 'branch-3way')
 
         self.assertEqual(x, y)
 
@@ -416,44 +412,44 @@ class Test_DSD_Reaction(unittest.TestCase):
         self.assertEqual(y.rate.constant,  0.0005)
 
     def test_sorting(self):
-        A = DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
-        B = DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
+        A = bc.DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
+        B = bc.DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
 
-        x = DSD_Reaction([B, A],[B, B], rtype = 'branch-3way')
+        x = bc.DSD_Reaction([B, A],[B, B], rtype = 'branch-3way')
         self.assertEqual('B + A -> B + B', str(x))
  
 @unittest.skipIf(SKIP, "skipping tests")
-class Test_DSD_Macrostate(unittest.TestCase):
+class DSD_Macrostate(unittest.TestCase):
     def setUp(self):
         pass
 
     def tearDown(self):
-        clear_memory()
+        bc.clear_memory()
 
     def test_initialize(self):
-        A = DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
-        B = DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
+        A = bc.DSD_Complex(list('NNNNNNN'), list('((...))'), name='A')
+        B = bc.DSD_Complex(list('NNNNNNN'), list('.(...).'), name='B')
 
-        x = DSD_Macrostate([A, B], representative=B)
+        x = bc.DSD_Macrostate([A, B], representative=B)
         self.assertEqual(x.canonical_complex, B)
         
 @unittest.skipIf(SKIP, "skipping tests")
-class Test_DSD_StrandOrder(unittest.TestCase):
+class DSD_StrandOrder(unittest.TestCase):
     def setUp(self):
         pass
 
     def tearDown(self):
-        clear_memory()
+        bc.clear_memory()
 
     def test_initialize(self):
         d1 = DummyDomain('d1', length=5)
         d2 = DummyDomain('d2', length=5)
         d3 = DummyDomain('d3', length=5)
-        A = DSD_StrandOrder([d1, d2], name='A')
-        B = DSD_StrandOrder([d3, ~d2, ~d1, '+', d2], name='B')
+        A = bc.DSD_StrandOrder([d1, d2], name='A')
+        B = bc.DSD_StrandOrder([d3, ~d2, ~d1, '+', d2], name='B')
 
-        with self.assertRaises(DSDDuplicationError):
-            C = DSD_StrandOrder([d2, '+', d3, ~d2, ~d1], name='C')
+        with self.assertRaises(bc.DSDDuplicationError):
+            C = bc.DSD_StrandOrder([d2, '+', d3, ~d2, ~d1], name='C')
         
         self.assertEqual(A.canonical_form, (('d1', 'd2'),))
         self.assertEqual(A.sequence, [d1, d2])
@@ -465,7 +461,7 @@ class Test_DSD_StrandOrder(unittest.TestCase):
         self.assertEqual(B.kernel_string, 'd3 d2* d1* + d2')
         self.assertEqual(B.name, 'B')
 
-        with self.assertRaises(DSDObjectsError):
+        with self.assertRaises(bc.DSDObjectsError):
             B.name = 'A'
 
         A.name = 'C'
