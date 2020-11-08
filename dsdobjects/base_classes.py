@@ -11,7 +11,8 @@ from .complex_utils import (SecondaryStructureError,
                             make_loop_index, 
                             wrap,
                             split_complex_pt,
-                            rotate_complex_db)
+                            rotate_complex_db,
+                            rotate_complex_pt)
 
 class ObjectInitError(Exception):
     pass
@@ -26,13 +27,40 @@ class DomainS(metaclass = Singleton):
     [a = Domain('a')]. If, however, a wrong length is provided, then 
     this will raise a DSDObjectsError [b = Domain('a*', 10)]
     """
+    DTYPE_CUTOFF = 8 
+    SHORT_DOM_LEN = 5
+    LONG_DOM_LEN = 15
+    PREFIX = 'd'
+    ID = 1
 
     @classmethod
-    def identifiers(cls, name, length = None):
+    def identifiers(cls, name = None, length = None, prefix = None, dtype = None):
         """ tuple: A method that must be accessible without initializing the object. """
+        if name is None:
+            if prefix is None:
+                prefix = f'{cls.PREFIX}'
+            name = f'{prefix}{cls.ID}'
+        if length is None:
+            length = cls.SHORT_DOM_LEN if dtype == 'short' else \
+                     cls.LONG_DOM_LEN if dtype == 'long' else None
+        elif dtype and not (dtype == 'short') == (length <= cls.DTYPE_CUTOFF):
+            raise ObjectInitError(f'Conflicting arguments {dtype} and {length}.')
+        if length is None and name[-1] == '*':
+            try:
+                length = len(cls(name[:-1]))
+            except SingletonError:
+                pass
         return ((name, length), name, {}) if length is not None else (None, name, {})
 
-    def __init__(self, name, length):
+    def __init__(self, name = None, length = None, prefix = None, dtype = None):
+        if name is None:
+            if prefix is None:
+                prefix = f'{self.__class__.PREFIX}'
+            name = f'{prefix}{self.__class__.ID}'
+            self.__class__.ID += 1
+        if length is None:
+            length = self.__class__.SHORT_DOM_LEN if dtype == 'short' else \
+                     self.__class__.LONG_DOM_LEN if dtype == 'long' else None
         self._name = name
         self._length = length
 
@@ -51,6 +79,10 @@ class DomainS(metaclass = Singleton):
     @length.setter
     def length(self, value):
         raise SingletonError(f'{self.__class__.__name__} object length is immutable!')
+
+    @property
+    def dtype(self):
+        return 'short' if self.length <= self.__class__.DTYPE_CUTOFF else 'long'
 
     @property
     def canonical_form(self):
@@ -123,18 +155,29 @@ class ComplexS(metaclass = Singleton):
         structure (list): A structure in dot-bracket notation.
         name (str, optional): Name of this domain.
     """
+    PREFIX = 'cplx'
+    ID = 1
 
     @classmethod
-    def identifiers(cls, sequence, structure, name = None, **kwargs):
+    def identifiers(cls, sequence, structure, name = None, prefix = None, **kwargs):
         """ tuple: A method that must be accessible without initializing the object. """
-        if sequence is None or structure is None:
+        if sequence is None:
             if name is None:
                 raise ObjectInitError('Insufficient arguments for Complex initialization.')
             return (None, name, {})
-
+        if name is None:
+            if prefix is None:
+                prefix = f'{cls.PREFIX}'
+            name = f'{prefix}{cls.ID}'
+        if structure is None: 
+            if '+' in sequence:
+                raise NotImplementedError('ComplexS "strand" mode must only contain a single strand.')
+            sstr = tuple('*' for _ in range(len(sequence)))
+            canon = (tuple(map(str, sequence)), sstr)
+            newargs = {'canon': canon, 'turns': None}
+            return (canon, name, newargs)
         if len(sequence) != len(structure):
             raise ObjectInitError(f'Complex initialization: {len(sequence)} != {len(structure)}.')
-
         cdict = {}
         for e, (rseq, rstr) in enumerate(rotate_complex_db(sequence, structure)):
             rcplx = tuple((tuple(map(str, rseq)), tuple(rstr)))
@@ -146,19 +189,22 @@ class ComplexS(metaclass = Singleton):
         else:
             canon = sorted(cdict, key = lambda x:(x[0], x[1]))[0]
             turns = cdict[canon] # How many rotations to the canonical form
-
         tot = len(make_strand_table(sequence))
         turns = wrap(-turns, tot) # How many rotations from the canonical form
 
         newargs = {'canon': canon, 'turns': turns}
         return (canon, name, newargs)
 
-    def __init__(self, sequence, structure, name = None, 
-                 canon = None, 
-                 turns = None):
+    def __init__(self, sequence, structure, name = None, prefix = None, 
+                 canon = None, turns = None):
+        if name is None:
+            if prefix is None:
+                prefix = f'{self.__class__.PREFIX}'
+            name = f'{prefix}{self.__class__.ID}'
+            self.__class__.ID += 1
         # This must have been set by the identifiers method.
         assert canon is not None
-        assert turns is not None
+        assert turns is not None or structure is None
 
         self._sequence = sequence
         self._structure = structure
@@ -172,6 +218,7 @@ class ComplexS(metaclass = Singleton):
         self._loop_index = None
 
         self._domains = None
+        self._concentration = None
         self._enclosed_domains = None
         self._exterior_domains = None
         self._exterior_loops = None
@@ -215,10 +262,36 @@ class ComplexS(metaclass = Singleton):
             raise ValueError('Something went terribly wrong... ?')
 
     @property
+    def concentration(self):
+        return self._concentration
+
+    @concentration.setter
+    def concentration(self, trip):
+        if trip is None:
+            self._concentration = None
+        else:
+            (mode, value, unit) = trip
+            assert isinstance(value, (int, float))
+            self._concentration = (mode, value, unit)
+
+    def concentrationformat(self, out):
+        mod = self._concentration[0]
+        val = self._concentration[1]
+        uni = self._concentration[2]
+        val = convert_units(val, uni, out)
+        return (mod, val, out)
+
+    @property
+    def size(self):
+        return len(self.__strand_table)
+
+    @property
     def kernel_string(self):
         """ str: print sequence and structure in `kernel` notation. """
         seq = self._sequence
         sst = self._structure
+        if sst is None:
+            return ' '.join(map(str, self.sequence))
         knl = ''
         for i in range(len(seq)):
             if sst[i] == '+':
@@ -232,7 +305,11 @@ class ComplexS(metaclass = Singleton):
         return knl[:-1]
 
     def rotate(self, turns = None):
-        return rotate_complex_db(self._sequence, self._structure, turns = turns)
+        return rotate_complex_db(self.sequence, self.structure, turns = turns)
+
+    def rotate_pt(self, turns = None):
+        # Make test to show that we must not use internal strand_table and pair_table!
+        return rotate_complex_pt(self.strand_table, self.pair_table, turns = turns)
     
     @property
     def sequence(self):
@@ -246,7 +323,7 @@ class ComplexS(metaclass = Singleton):
     @property
     def structure(self):
         """ list: the complex structure. """
-        return self._structure[:]
+        return self._structure[:] if self._structure is not None else None
 
     @property
     def pair_table(self):
@@ -290,6 +367,12 @@ class ComplexS(metaclass = Singleton):
         if loc[0] < 0 or loc[1] < 0:
             raise IndexError
         return self.__pair_table[loc[0]][loc[1]]
+
+    def rotate_pairtable_loc(self, loc, n=None):
+        """ Maps the locus of a given pair-table to a new rotation.  """
+        if n is None:
+            n = self.size
+        return (wrap(loc[0] + n, self.size), loc[1])
 
     @property
     def domains(self):
@@ -339,8 +422,8 @@ class ComplexS(metaclass = Singleton):
     @property
     def is_connected(self):
         if not self._loop_index:
-            try :
-                self._loop_index, self._exterior_loops = self.__loop_index
+            try:
+                _ = self.__loop_index
             except SecondaryStructureError as e:
                 return False
         return True
@@ -351,7 +434,10 @@ class ComplexS(metaclass = Singleton):
         for st, pt in split_complex_pt(stab, ptab):
             nseq = strand_table_to_sequence(st)
             nsst = pair_table_to_dot_bracket(pt)
-            yield self.__class__(nseq, nsst)
+            try:
+                yield self.__class__(nseq, nsst)
+            except SingletonError as err:
+                yield err.existing
         return
 
     def __repr__(self):
@@ -401,10 +487,12 @@ class MacrostateS(metaclass = Singleton):
             nargs = {}
         else:
             complexes = tuple(sorted(complexes, key = lambda x: x.canonical_form))
-            assert name in [x.name for x in complexes]
+            nargs = {'canon': complexes}
             if name is None:
                 name = complexes[0].name
-            nargs = {'canon': complexes}
+                nargs['name'] = name
+            else:
+                assert name in [x.name for x in complexes]
         return (complexes, name, nargs)
 
     def __init__(self, complexes, name, canon = None):
@@ -491,34 +579,34 @@ class ReactionS(metaclass = Singleton):
     """
 
     @classmethod
-    def identifiers(cls, reactants, products, rtype):
+    def identifiers(cls, reactants, products, rtype, name = None):
         """ tuple: A method that must be accessible without initializing the object. """
-        react = tuple(sorted(list(map(lambda x: x.canonical_form, reactants))))
-        prods = tuple(sorted(list(map(lambda x: x.canonical_form, products))))
+        if name is not None and reactants is None and products is None and rtype is None:
+            return (None, name, {})
+        react = tuple(sorted([x.canonical_form for x in reactants]))
+        prods = tuple(sorted([x.canonical_form for x in products]))
         canon = tuple((react, prods, rtype))
-        name = "reaction [{}] {} -> {}".format(rtype,
-                                               " + ".join([x.name for x in reactants]), 
-                                               " + ".join([x.name for x in products]))
         newargs = {'canon': canon}
+        if name is None:
+            name = "[{}] {} -> {}".format(rtype,
+                    " + ".join([x.name for x in sorted(reactants, 
+                                                       key = lambda y: y.canonical_form)]), 
+                    " + ".join([x.name for x in sorted(products, 
+                                                       key = lambda y: y.canonical_form)]))
+            newargs['name'] = name
         return (canon, name, newargs)
 
-    def __init__(self, reactants, products, rtype = None, canon = None):
-        self._reactants = reactants
-        self._products = products
+    def __init__(self, reactants, products, rtype, name = None, canon = None):
+        self._reactants = sorted(reactants, key = lambda y: y.canonical_form)
+        self._products = sorted(products, key = lambda y: y.canonical_form)
         self._rtype = rtype
 
         # rate constant in counts per volume
         self._const = None
         self._units = None
-        #self._Mol = None
-        #self._Mol_unit = None
-        #self._counts = None
-        #self._count_unit = None
-        #self._volume = None
-        #self._volume_unit = None
-        #self._time = None
-        #self._time_unit = None
 
+        assert name is not None
+        self._name = name
         assert canon is not None
         self._canonical_form = canon
 
@@ -542,7 +630,7 @@ class ReactionS(metaclass = Singleton):
 
     @property
     def rtype(self):
-        """str: *peppercorn* reaction type (bind21, condensed, ...) """
+        """str: reaction type (bind21, condensed, ...) """
         return self._rtype
 
     @rtype.setter
@@ -551,34 +639,47 @@ class ReactionS(metaclass = Singleton):
 
     @property
     def name(self):
-        """str: *peppercorn* reaction type (bind21, condensed, ...) """
+        return self._name
 
-        if self._const:
-            rc = ' = {}{}'.format(flint(self._const), f' {self._units}' if self._units else '')
-        else:
-            rc = ''
-        return "reaction [{}{}] {} -> {}".format(self.rtype, rc,
-               " + ".join([x.name for x in self.reactants]), 
-               " + ".join([x.name for x in self.products]))
+    @name.setter
+    def name(self, value):
+        raise SingletonError(f'{self.__class__.__name__} object rtype is immutable!')
 
     @property
+    def reaction_string(self):
+        if self._const:
+            rc = ' = {:10g}{:5s} '.format(flint(self._const), f' {self._units}' if self._units else '')
+        else:
+            rc = ''
+        return "reaction [{:12s}{:12s}] {} -> {}".format(
+                self.rtype, rc, " + ".join([x.name for x in self.reactants]), 
+                                " + ".join([x.name for x in self.products]))
+    @property
     def arity(self):
-        """(int, int): number of reactants, number of products."""
+        """ (int, int): number of reactants, number of products."""
         return (len(self._reactants), len(self._products))
 
     @property
     def rate_constant(self):
-        return flint(self._const), self._units
+        if self._const is None:
+            return None, None
+        else:
+            return flint(self._const), self._units
 
-    def set_rate_parameters(self, constant, units = None):
+    @rate_constant.setter
+    def rate_constant(self, tup):
+        if isinstance(tup, tuple):
+            assert 1 <= len(tup) <= 2
+            (constant, units) = tup if len(tup) == 2 else (tup, None)
+        else:
+            (constant, units) = (tup, None)
         self._const = constant
         self._units = units
 
     def rateformat(self, output_units):
-        """Set reaction rate constant and units."""
+        """ Set reaction rate constant and units. """
         if self._units is None:
-            raise ObjectInitError(f'Cannot change the units of the rate constant: {units}.')
-
+            raise ObjectInitError(f'Cannot change the units of the rate constant: {self._units}.')
         old = self._units.split('/')[1:]
         if len(old) != len(self._reactants):
             raise NotImplementedError(f'Cannot interpret the format of units: {self._units}')

@@ -14,7 +14,7 @@ from dsdobjects.base_classes import DomainS, ComplexS, MacrostateS, ReactionS
 SKIP = False
 
 @unittest.skipIf(SKIP, "skipping tests.")
-class Test_IO(unittest.TestCase):
+class TestReadLine(unittest.TestCase):
     def setUp(self):
         set_prototypes()
 
@@ -39,7 +39,6 @@ class Test_IO(unittest.TestCase):
         assert x.name == 't1'
         assert x.length == 5
         assert x.sequence == 'NCGGA'
-        assert (~x).sequence == 'TCCGN'
 
     def test_read_pil_line_02(self):
         doms = []
@@ -68,6 +67,7 @@ class Test_IO(unittest.TestCase):
         doms.append(read_pil_line("sequence z = NNNNNN"))
         for d in list(doms):
             doms.append(~d)
+
         A = read_pil_line("A = a x( b( y( z* c* ) ) )")
         I = read_pil_line("I = y* b* x* a*")
         IA = read_pil_line("IA = a( x( b( y( z* c* y* b* x* + ) ) ) )")
@@ -84,8 +84,9 @@ class Test_IO(unittest.TestCase):
 
         x = read_pil_line("reaction [condensed      =  1.66666e+06 /M/s ] A + I -> IA")
         assert isinstance(x, ReactionS)
-        assert repr(x) == "ReactionS(reaction [condensed = 1666660 /M/s] A + I -> IA)"
-        assert str(x) == "reaction [condensed = 1666660 /M/s] A + I -> IA"
+        assert repr(x) == 'ReactionS([condensed] A + I -> IA)'
+        assert str(x) == '[condensed] A + I -> IA'
+        assert x.reaction_string == 'reaction [condensed    = 1.66666e+06 /M/s ] A + I -> IA'
 
         self.assertEqual(x.products, [read_pil_line("macrostate IA = [IA]")])
         with self.assertRaises(SingletonError):
@@ -93,7 +94,7 @@ class Test_IO(unittest.TestCase):
 
 
 @unittest.skipIf(SKIP, "skipping tests")
-class Test_Reaction(unittest.TestCase):
+class TestReadFile(unittest.TestCase):
     def setUp(self):
         set_prototypes()
 
@@ -103,17 +104,10 @@ class Test_Reaction(unittest.TestCase):
         clear_singletons(MacrostateS)
         clear_singletons(ReactionS)
 
-    def test_ptreact(self):
-        dom, clx, rms, det, con = read_pil(
+    def test_read_pil_01(self):
+        out = read_pil(
         """
         # Domains (12) 
-        length a = 6
-        length b = 6
-        length c = 6
-        length x = 6
-        length y = 6
-        length z = 6
-
         sequence a = NNNNNN
         sequence b = NNNNNN 
         sequence c = NNNNNN
@@ -150,16 +144,42 @@ class Test_Reaction(unittest.TestCase):
         """)
 
         # A preliminary interface to start testing prototype functions.
-        rxn = con[0]
-        a, b, c = dom['a'], dom['b'], dom['c']
-        x, y, z = dom['x'], dom['y'], dom['z']
-        A, B, I = rms['A'], rms['B'], rms['I']
+        assert len(out['con_reactions']) == 4
+        A = out['macrostates']['A']
+        I = out['macrostates']['I']
+        IA = out['macrostates']['IA']
+        assert ReactionS([A, I], [IA], 'condensed') in out['con_reactions']
+        assert DomainS('a').sequence == 'NNNNNN'
 
-        assert rxn.reactants == [A, I]
-        #so, pt1, pt2 = rxn.ptreact()
-        #assert so.sequence == [a, x, b, y, ~z, ~c, ~y, ~b, ~x, '+', ~y, ~b, ~x, ~a]
-        #assert pt1 == [[None, (0, 8), (0, 7), (0, 6), None, None, (0, 3), (0, 2), (0, 1)], [None, None, None, None]]
-        #assert pt2 == [[(1, 3), (1, 2), (1, 1), (1, 0), None, None, None, None, None], [(0, 3), (0, 2), (0, 1), (0, 0)]]
+    def test_complicated_input(self):
+        out = read_pil(
+        """
+        # Domains (12) 
+        sequence a = NNNNNN
+        sequence b = NNNNNN 
+        sequence c = NNNNNN
+        sequence x = NNNNNN
+        sequence y = NNNNNN 
+        sequence z = NNNNNN 
+
+        strand s1 = a x b y z* c* y* b* x*
+        sup-sequence xby = x b y
+
+        structure A = s1 : .(((..)))
+        B = a xby( + ) b
+
+        """)
+        assert len(out['domains']) == 12
+        assert len(out['complexes']) == 4
+        assert 's1' in out['complexes']
+        assert out['complexes']['s1'].structure is None
+        assert 'xby' in out['complexes']
+        assert out['complexes']['xby'].structure is None
+        assert 'A' in out['complexes']
+        assert out['complexes']['A'].kernel_string == 'a x( b( y( z* c* ) ) )'
+        assert 'B' in out['complexes']
+        assert out['complexes']['B'].sequence == [DomainS('a'), DomainS('x'), DomainS('b'), DomainS('y'), '+', DomainS('y*'), DomainS('b*'), DomainS('x*'), DomainS('b')]
+        assert out['complexes']['B'].kernel_string == 'a x( b( y( + ) ) ) b'
 
 if __name__ == '__main__':
     unittest.main()

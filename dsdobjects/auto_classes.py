@@ -5,7 +5,8 @@
 import logging
 log = logging.getLogger(__name__)
 
-from .base_classes import DomainS, ComplexS
+from .singleton import SingletonError
+from .base_classes import ObjectInitError, DomainS, ComplexS
 from .complex_utils import rotate_complex_db, make_strand_table, wrap
 
 class DomainA(DomainS):
@@ -17,7 +18,7 @@ class DomainA(DomainS):
 
     @classmethod
     def identifiers(cls, name = None, length = None, prefix = 'd', dtype = None):
-        my = DomainA
+        my = cls
         """ tuple: A method that must be accessible without initializing the object. """
         if name is None:
             name = f'{prefix}{my.ID}'
@@ -25,10 +26,15 @@ class DomainA(DomainS):
             length = my.SHORT_DOM_LEN if dtype == 'short' else my.LONG_DOM_LEN if dtype == 'long' else None
         elif dtype and not (dtype == 'short') == (length <= my.DTYPE_CUTOFF):
             raise ObjectInitError(f'Conflicting arguments {dtype} and {length}.')
+        if length is None and name[-1] == '*':
+            try:
+                length = len(cls(name[:-1]))
+            except SingletonError:
+                pass
         return ((name, length), name, {}) if length is not None else (None, name, {})
 
     def __init__(self, name = None, length = None, prefix = 'd', dtype = None):
-        my = DomainA # same as in identifiers!
+        my = self.__class__ # same as in identifiers!
         if name is None:
             name = f'{prefix}{my.ID}'
             my.ID += 1
@@ -38,12 +44,12 @@ class DomainA(DomainS):
 
     @property
     def dtype(self):
-        return 'short' if self.length <= DomainA.DTYPE_CUTOFF else 'long'
+        return 'short' if self.length <= self.__class__.DTYPE_CUTOFF else 'long'
 
     @property
     def complement(self):
         """ obj: the complementary domain object. """
-        return DomainA(self.cname, self.length)
+        return self.__class__(self.cname, self.length)
 
 class ComplexA(ComplexS):
     # Allows for automatic name assignments.
@@ -52,7 +58,7 @@ class ComplexA(ComplexS):
     @classmethod
     def identifiers(cls, sequence, structure, name = None, prefix = 'cplx', **kwargs):
         """ tuple: A method that must be accessible without initializing the object. """
-        my = ComplexA
+        my = cls
         if sequence is None or structure is None:
             if name is None:
                 raise ObjectInitError('Insufficient arguments for Complex initialization.')
@@ -81,7 +87,7 @@ class ComplexA(ComplexS):
         return (canon, name, newargs)
 
     def __init__(self, sequence, structure, name = None, prefix = 'cplx', **kwargs):
-        my = ComplexA 
+        my = self.__class__
         if name is None:
             name = f'{prefix}{my.ID}'
             my.ID += 1
