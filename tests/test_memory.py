@@ -14,6 +14,8 @@ from dsdobjects import (SingletonError,
                         DomainS)
 import dsdobjects.objectio as oio
 
+SKIP = False
+
 class MyDomain(DomainS):
     pass
 
@@ -39,7 +41,16 @@ class TestMemoryLeaks(unittest.TestCase):
         for s in show_singletons(MyDomain):
             print(s)
 
+@unittest.skipIf(SKIP, "skipping tests.")
 class TestMemoryLeaks2(unittest.TestCase):
+    def setUp(self):
+        try:
+            import matplotlib.pyplot
+        except ImportError:
+            global SKIP
+            SKIP = True
+
+    @unittest.skipIf(SKIP, "skipping tests.")
     def test_memory_leak(self):
         with self.assertRaises(SingletonError):
             import matplotlib.pyplot
@@ -50,8 +61,8 @@ class TestMemoryLeaks2(unittest.TestCase):
                 a = initdomain2()
             del a
 
+    @unittest.skipIf(SKIP, "skipping tests.")
     def test_memory_leak_fix(self):
-        import matplotlib.pyplot
         for _ in range(2):
             clear_singletons(MyDomain)
             a = initdomain1()

@@ -287,7 +287,6 @@ class TestSingletonComplex(unittest.TestCase):
         assert foo.sequence == [d1, d2, ~d3]
         assert foo.structure is None
 
-
 @unittest.skipIf(SKIP, "skipping tests.")
 class TestAutomaticComplex(unittest.TestCase):
     def setUp(self):

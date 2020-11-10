@@ -16,7 +16,7 @@ def clear_singletons(cls):
 
 def show_singletons(cls):
     for name, obj in cls._instanceNames.items():
-        yield (f'{name=}, {obj=}, {sys.getrefcount(obj)=}')
+        yield (f'name = {name}, obj = {obj}, sys.getrefcount(obj) = {sys.getrefcount(obj)}')
 
 class Singleton(type):
     """ A singleton metaclass. 
