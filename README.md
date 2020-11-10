@@ -7,16 +7,30 @@
 [![Build Status](https://travis-ci.com/dna-and-natural-algorithms-group/dsdobjects.svg?branch=development)](https://travis-ci.com/github/dna-and-natural-algorithms-group/dsdobjects)
 [![Codecov branch](https://img.shields.io/codecov/c/github/dna-and-natural-algorithms-group/dsdobjects/development)](https://codecov.io/gh/dna-and-natural-algorithms-group/dsdobjects)
 
+A library of base classes for domain-level strand displacement (DSD)
+programming.  If you are starting a new project that requires domains,
+complexes, secondary structures, nucleotide sequences, reactions, etc.  then
+you might find this module useful. Note that this is the in-house library of
+the [nuskell] compiler framework; it handels the parsing of supported input file
+formats (mainly \*.PIL) and their translation into the respective DSD objects.
 
-This Python module provides a library of protype objects and base classes for
-domain-level strand displacement (DSD) programming. There are two types of
-usage: 
- 1) ready-to-go prototype objects, 
- 2) tweak-em-yourself core objects.
+All objects provided here are **singletons**. In other words, once you
+intialize a Domain ``d1 = DomainS(name = 'a', length = 15)``, you will not be
+allowed to initialize a new domain with the same name but different length,
+unless you delete (all references to) the variable ``d1`` first. If you try to
+initialize the same domain a second time, then the new object ``is`` d1.
+Generally, each (DomainS, ComplexS, MacrostateS, ReactionS) must be initialized
+with parameters that define their *canonical form* and (optionally) a name. If
+both are given, the library checks that there are no conflicts with existing
+objects, if the name is not provided, the library tries to initialize a new
+object with an automatic name, but raises a *SingletonError* which holds a
+reference to the existing object. If only the name is given, the existing
+object is returned.
 
-If you start with a new project, you want to use the prototypes. These are
-out-of-the box functional classes that can be initialized, for example, using
-various standards of the text file format *.pil. 
+This library is expected to evolve further, potentially breaking backward
+compatibility as new challenges are waiting in the [nuskell] compiler framework.
+Don't hesitate the authors with questions about future plans. Inheritance and
+extensions for all provided objects is fully supported and encouraged.
 
 ## Installation
 To install this library use pip:
@@ -28,124 +42,62 @@ or the following command in the root directory:
 $ python ./setup.py install
 ```
 
-
-### Quick Start with object prototypes.
+### Quick Start
 ```py
-from dsdobjects import SequenceConstraint, StrandOrder, LogicDomain, Domain, Complex, Macrostate, Reaction
+from dsdobjects import DomainS, ComplexS, MacrostateS, ReactionS
 ```
 
 ```py
 # Define a few toy domains:
-a = LogicDomain('a', dtype='long')
-b = LogicDomain('b', dtype='long', length=9)
-c = LogicDomain('c', dtype='short', length=6)
+a = DomainS('a', length = 15)
+b = DomainS('b', length = 9)
+c = DomainS('c', length = 6)
 
-# LogicDomains have exactly one complement, it can be initialized 
-# and/or accessed using the __invert__ operator. The built-in 
-# memory management ensures that there is only one object for each domain.
+# DomainS objects have exactly one complement, it can be initialized 
+# and/or accessed using the __invert__ operator. The singleton type
+# ensures that there is only one object for each domain.
 assert (a is ~(~a))
 
 # Use the Domains to define a Complex ...
-cplx = Complex([a, b, c, ~b, '+', ~a], list('((.)+)'), name='rudolf')
+foo = Complex([a, b, c, ~b, '+', ~a], list('((.)+)'), name = 'foo')
 
 # ... and test some of the built-in complex properties:
-cplx.kernel_string
-cplx.canonical_form
-cplx.size
-for r in cplx.rotate():
-    print(r.kernel_string)
-cplx.pair_table
+foo.kernel_string
+foo.canonical_form
+foo.size
+foo.pair_table
+for r in foo.rotate():
+    print(r, r.kernel_string)
 
-# If you were to define two complexes as one disconnected complex ... 
-cplx = Complex([a, b, c, ~b, '+', ~a], list('.(.)+.'), name='cplx')
-assert cplx.is_connected is False
-
-# ... you can quickly and return the indiviudal complexes:
+# If you initialize a disconnected complex ... 
+bar = Complex([a, b, c, ~b, '+', ~a], list('.(.)+.'), name = 'bar')
+assert bar.is_connected is False
+# ... use split to get all indiviudal complexes:
 cx1, cx2 = cplx.split()
 ```
 
-### Quick Start with text input.
-For example initialize prototype objects by loading a system (or a single line) of 
-*.pil file format:
+### Quick Start from PIL files
+Initialize prototype objects by loading a system (or a single line) of \*.PIL
+file format:
 
 ```py
 import dsdobjects.objectio as oio
 oio.set_prototypes()
 
-domains, complexes, macrostates, detailed_rxns, condensed_rxns = oio.read_pil(filename.pil)
+# The following dictionary contains references to all objects.
+outdict = oio.read_pil(filename.pil)
 
-myobject = oio.read_pil_line("length d5 = 7")
-assert isinstance(myobject, LogicDomain)
+d5 = oio.read_pil_line("length d5 = 7")
+assert isinstance(d5, DomainS)
 
-myobject = oio.read_pil_line("sequence d6 = NNNNN")
-assert isinstance(myobject, Domain)
-```
-
-## Abut the core objects.
-If prototypes are not sufficient, you can make your own objects by inheriting
-from the core objects. Core objects provide a basic set of __builtin__
-functions (e.g. equality, sorting), basic properties, memory management.  One
-way to get started is by copying the prototypes file into your project, and
-adapt it to your needs. Consider a pull request back into the main dsdobjects
-repository!
-
-
-### Quick Start with core objects.
-Inheritance from dsdobjects.base_classes provides only basic functions such as
-'~', '==', '!=', and access to the built-in memory management for each class.
-Some potential ambiguities, such as requesting the complement of a Domain,  or
-the length of a complex must be defined upon inheritance.
-
-```py
-from dsdobjects.core import DL_Domain
-
-# A personalized domain that extends the DL_Domain base class.
-class MyDomain(DL_Domain):
-
-    def __init__(self, name, dtype=None, length=None):
-        super(MyDomain, self).__init__(name, dtype, length)
- 
-    @property
-    def complement(self):
-        # Automatically initialize or return the complementary domain.
-        if self._complement is None:
-            cname = self._name[:-1] if self.is_complement else self._name + '*'
-            if cname in DL_Domain.MEMORY:
-                self._complement = DL_Domain.MEMORY[cname]
-            else :
-                self._complement = MyDomain(cname, self.dtype, self.length)
-        return self._complement
+d6 = oio.read_pil_line("sequence d6 = NNNNN")
+assert isinstance(d6, DomainS)
+assert DomainS.sequence == 'NNNNN'
 ```
 
 ## Version
 0.8 -- requires Python<=3.7
-  * bug fix in pil I/O for reaction rates
-
-0.7.1 -- pil I/O for prototypes and customn objects
-  * prototype complex concentration
-  * read_pil supports inherited objects
-  * logging support
-  * bug fix for adding core objects
-
-0.7 -- Python 3.x support / prototypes
-  * basic support of prototype objects
-  * added StrandOrder base_class and prototpye
-  * allow parsing of infinite error bars for reaction rates
-  * DSD_Restingset renamed to DSD_Macrostate
-  * broken backward compatibility:
-      reaction rates are now namedtuples
-
-0.6.3 -- added parser for seesaw language
-
-0.6.2 -- bugfix for restingsets with given representative
-
-0.6.1 -- adapted setup.py when used as pypi dependency
-
-0.6 -- PIL parser supports concentration format
-  * "non-equal" bugfixes in base_classes.py
-  * supports rate-error bars when parsing PIL format
-
-0.5 -- improved canonical forms
+  * complete rewrite of the library to use singleton objects with weakref
 
 ## Author
 Stefan Badelt
@@ -160,7 +112,6 @@ in the [DNA and Natural Algorithms Group], Caltech:
 ## Projects depending on dsdobjects
   * [peppercornenumerator]
   * [nuskell]
-
 
 ## License
 MIT
