@@ -53,7 +53,6 @@ class TestMemoryLeaks2(unittest.TestCase):
     @unittest.skipIf(SKIP, "skipping tests.")
     def test_memory_leak(self):
         with self.assertRaises(SingletonError):
-            import matplotlib.pyplot
             for _ in range(2):
                 a = initdomain1()
             del a
