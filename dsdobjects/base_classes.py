@@ -130,6 +130,7 @@ class DomainS(metaclass = Singleton):
         return self.complement
 
     def __eq__(self, other):
+        """ Test if two domains are equal. """
         # We use DomainS here, not self.__class__!
         # Equality is based on the canonical form, otherwise use "is"
         if not isinstance(other, DomainS):
@@ -466,6 +467,8 @@ class ComplexS(metaclass = Singleton):
 
     def __eq__(self, other):
         """ Test if two complexes are equal. """
+        # We use ComplexS here, not self.__class__!
+        # Equality is based on the canonical form, otherwise use "is"
         if not isinstance(other, ComplexS):
             return False
         return self.canonical_form == other.canonical_form
@@ -474,15 +477,19 @@ class ComplexS(metaclass = Singleton):
         return not (self == other)
 
     def __lt__(self, other):
+        assert isinstance(other, ComplexS)
         return self.canonical_form < other.canonical_form
 
     def __gt__(self, other):
+        assert isinstance(other, ComplexS)
         return self.canonical_form > other.canonical_form
 
     def __le__(self, other):
+        assert isinstance(other, ComplexS)
         return self.canonical_form <= other.canonical_form
 
     def __ge__(self, other):
+        assert isinstance(other, ComplexS)
         return self.canonical_form >= other.canonical_form
 
     def __hash__(self):
@@ -521,8 +528,7 @@ class MacrostateS(metaclass = Singleton):
     @property
     def complexes(self):
         """ A list of complexes in the resting set. """
-        for x in self._complexes:
-            yield x
+        return iter(self._complexes)
 
     @complexes.setter
     def complexes(self, value):
@@ -559,7 +565,8 @@ class MacrostateS(metaclass = Singleton):
         return len(self._complexes)
 
     def __eq__(self, other):
-        """ Two resting sets are equal if their complexes are equal """
+        # We use MacrostateS here, not self.__class__!
+        # Equality is based on the canonical form, otherwise use "is"
         if not isinstance(other, MacrostateS):
             return False
         return (self.canonical_form == other.canonical_form)
@@ -632,7 +639,7 @@ class ReactionS(metaclass = Singleton):
     @property
     def reactants(self):
         """list: list of reactants. """
-        return self._reactants[:]
+        return iter(self._reactants)
 
     @reactants.setter
     def reactants(self, value):
@@ -641,7 +648,7 @@ class ReactionS(metaclass = Singleton):
     @property
     def products(self):
         """list: list of products. """
-        return self._products[:]
+        return iter(self._products)
 
     @products.setter
     def products(self, value):
@@ -676,7 +683,7 @@ class ReactionS(metaclass = Singleton):
     @property
     def arity(self):
         """ (int, int): number of reactants, number of products."""
-        return (len(self._reactants), len(self._products))
+        return len(self._reactants), len(self._products)
 
     @property
     def rate_constant(self):
@@ -727,6 +734,8 @@ class ReactionS(metaclass = Singleton):
         return f'{self.name}'
 
     def __eq__(self, other):
+        # We use ReactionS here, not self.__class__!
+        # Equality is based on the canonical form, otherwise use "is"
         if not isinstance(other, ReactionS):
             return False
         return self.canonical_form == other.canonical_form

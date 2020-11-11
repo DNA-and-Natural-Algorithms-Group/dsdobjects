@@ -88,7 +88,7 @@ class TestReadLine(unittest.TestCase):
         assert str(x) == '[condensed] A + I -> IA'
         assert x.reaction_string == 'reaction [condensed    = 1.66666e+06 /M/s ] A + I -> IA'
 
-        self.assertEqual(x.products, [read_pil_line("macrostate IA = [IA]")])
+        self.assertEqual(list(x.products), [read_pil_line("macrostate IA = [IA]")])
         with self.assertRaises(SingletonError):
             read_pil_line("macrostate IA = [IA,A]")
 
