@@ -45,12 +45,26 @@ class DomainS(metaclass = Singleton):
                      cls.LONG_DOM_LEN if dtype == 'long' else None
         elif dtype and not (dtype == 'short') == (length <= cls.DTYPE_CUTOFF):
             raise ObjectInitError(f'Conflicting arguments {dtype} and {length}.')
+
+        cname = f'{name[:-1]}' if name[-1] == '*' else f'{name}*' 
+        newargs = {}
         if length is None and name[-1] == '*':
+            # Allow initialization of a complementary domain without length!
             try:
-                length = len(cls(name[:-1]))
+                length = len(cls(cname, length = None))
+                newargs = {'length': length}
             except SingletonError:
                 pass
-        return ((name, length), name, {}) if length is not None else (None, name, {})
+        elif length and name[-1] != '*':
+            # Forbid initialization of a non-complementary domain with conflicting length.
+            clength = length
+            try:
+                clength = len(cls(cname))
+                cls(cname, length = length)
+            except SingletonError:
+                if clength != length:
+                    raise SingletonError(f'Duplicate Singleton {cls.__name__}: name ({name}) has the wrong length {length} vs {clength}!')
+        return ((name, length), name, newargs) if length is not None else (None, name, {})
 
     def __init__(self, name = None, length = None, prefix = None, dtype = None):
         if name is None:
@@ -63,6 +77,7 @@ class DomainS(metaclass = Singleton):
                      self.__class__.LONG_DOM_LEN if dtype == 'long' else None
         self._name = name
         self._length = length
+        self.sequence = None
 
     @property
     def name(self):
@@ -473,6 +488,9 @@ class ComplexS(metaclass = Singleton):
     def __hash__(self):
         return hash(self.canonical_form)
 
+class StrandS(ComplexS):
+    pass
+
 class MacrostateS(metaclass = Singleton):
     """ A set of complexes (singleton). 
 
@@ -577,6 +595,7 @@ class ReactionS(metaclass = Singleton):
       rtype (str, optional): Reaction type, e.g. bind21, condensed, .. Defaults to None.
       rate (flt, optional): Reaction rate. A reaction rate 
     """
+    RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
 
     @classmethod
     def identifiers(cls, reactants, products, rtype, name = None):

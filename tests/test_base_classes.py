@@ -127,6 +127,19 @@ class TestAutomaticDomain(unittest.TestCase):
         assert (b.name, b.length) == ('a2', 10)
         assert (c.name, c.length) == ('a3', 10)
 
+    def test_initialization_03(self):
+        x = DomainS('a', 15)
+        y = DomainS('a*')
+        assert len(x) == len(y)
+
+        x = DomainS('b*', 5)
+        with self.assertRaises(SingletonError):
+            y = DomainS('b')
+        with self.assertRaises(SingletonError):
+            y = DomainS('b', 10)
+        y = DomainS('b', 5)
+        assert len(x) == len(y)
+
     def test_immutable_forms(self):
         a = DomainS('a', 15)
         b = DomainS('b', 15)

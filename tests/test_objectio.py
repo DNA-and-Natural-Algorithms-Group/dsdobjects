@@ -9,7 +9,7 @@ import unittest
 
 from dsdobjects import SingletonError, clear_singletons
 from dsdobjects.objectio import read_pil, read_pil_line, set_prototypes
-from dsdobjects.base_classes import DomainS, ComplexS, MacrostateS, ReactionS
+from dsdobjects.base_classes import DomainS, StrandS, ComplexS, MacrostateS, ReactionS
 
 SKIP = False
 
@@ -100,6 +100,7 @@ class TestReadFile(unittest.TestCase):
 
     def tearDown(self):
         clear_singletons(DomainS)
+        clear_singletons(StrandS)
         clear_singletons(ComplexS)
         clear_singletons(MacrostateS)
         clear_singletons(ReactionS)
@@ -162,19 +163,20 @@ class TestReadFile(unittest.TestCase):
         sequence y = NNNNNN 
         sequence z = NNNNNN 
 
-        strand s1 = a x b y z* c* y* b* x*
+        strand A = a x b y z* c* y* b* x*
         sup-sequence xby = x b y
 
-        structure A = s1 : .(((..)))
+        structure A = A : .(((..)))
         B = a xby( + ) b
 
         """)
         assert len(out['domains']) == 12
-        assert len(out['complexes']) == 4
-        assert 's1' in out['complexes']
-        assert out['complexes']['s1'].structure is None
-        assert 'xby' in out['complexes']
-        assert out['complexes']['xby'].structure is None
+        assert len(out['strands']) == 2
+        assert len(out['complexes']) == 2
+        assert 'A' in out['strands']
+        assert out['strands']['A'].structure is None
+        assert 'xby' in out['strands']
+        assert out['strands']['xby'].structure is None
         assert 'A' in out['complexes']
         assert out['complexes']['A'].kernel_string == 'a x( b( y( z* c* ) ) )'
         assert 'B' in out['complexes']

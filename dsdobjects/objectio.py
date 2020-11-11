@@ -10,31 +10,27 @@ from .iupac_utils import reverse_wc_complement
 from .complex_utils import strand_table_to_sequence
 from .dsdparser import (parse_seesaw_string, parse_seesaw_file,
                         parse_pil_string, parse_pil_file)
+from .base_classes import DomainS, StrandS, ComplexS, MacrostateS, ReactionS
 
-Domain = None
-Complex = None
-Reaction = None
-Macrostate = None
+Domain = DomainS
+Strand = StrandS
+Complex = ComplexS
+Macrostate = MacrostateS
+Reaction = ReactionS
 
 def set_prototypes(): # Replace all objects with prototypes
-    from .base_classes import DomainS as D
-    from .base_classes import ComplexS as C
-    from .base_classes import ReactionS as R
-    from .base_classes import MacrostateS as M
-
     global Domain
+    global Strand
     global Complex
     global Reaction
     global Macrostate
 
-    Domain = D
-    Complex = C
-    Reaction = R
-    Macrostate = M
-    R.RTYPES = set(['condensed', 'open', 'bind11', 'bind21', 'branch-3way', 'branch-4way'])
-
-class MissingObjectError(Exception):
-    pass
+    Domain = DomainS
+    Strand = StrandS
+    Complex = ComplexS
+    Reaction = ReactionS
+    Macrostate = MacrostateS
+    return
 
 class PilFormatError(Exception):
     pass
@@ -91,6 +87,7 @@ def read_pil(data, is_file = False, ignore = None):
     parsed_file = parse_pil_file(data) if is_file else parse_pil_string(data)
 
     out = {'domains': dict(),
+           'strands': dict(),
            'complexes': dict(),
            'macrostates': dict(),
            'det_reactions': set(),
@@ -101,19 +98,21 @@ def read_pil(data, is_file = False, ignore = None):
         if ignore and line[0] in ignore:
             continue
         obj = read_pil_line(line)
-        if Domain and isinstance(obj, Domain):
+        if isinstance(obj, Domain):
             out['domains'][obj.name] = obj
             comp = ~obj
-            if hasattr(obj, 'sequence') and obj.sequence is not None:
+            if obj.sequence is not None and comp.sequence is None:
                 comp.sequence = reverse_wc_complement(obj.sequence, material = 'DNA')
             out['domains'][comp.name] = comp
-        elif Complex and isinstance(obj, Complex):
+        elif isinstance(obj, Strand):
+            out['strands'][obj.name] = obj
+        elif isinstance(obj, Complex):
             out['complexes'][obj.name] = obj
-        elif Macrostate and isinstance(obj, Macrostate):
+        elif isinstance(obj, Macrostate):
             out['macrostates'][obj.name] = obj
-        elif Reaction and isinstance(obj, Reaction) and obj.rtype == 'condensed':
+        elif isinstance(obj, Reaction) and obj.rtype == 'condensed':
             out['con_reactions'].add(obj)
-        elif Reaction and isinstance(obj, Reaction) and obj.rtype != 'condensed':
+        elif isinstance(obj, Reaction) and obj.rtype != 'condensed':
             out['det_reactions'].add(obj)
         else:
             assert isinstance(obj, list)
@@ -141,15 +140,14 @@ def read_pil_line(raw):
         anon.sequence = line[2]
         return anon
 
-    elif line[0] == 'composite-domain' and Complex is not None:
+    elif line[0] == 'composite-domain' and Strand is not None:
         # This could be a strand definition or a composite domain.
         sequence = [Domain(d) for d in line[2]]
-        anon = Complex(sequence, None, name)
-        anon.concentration = ('constant', 0, 'M')
+        anon = Strand(sequence, None, name)
         return anon
  
     elif line[0] == 'strand-complex' and Complex is not None:
-        st = [Complex(None, None, name = s).sequence for s in line[2]]
+        st = [Strand(None, None, name = s).sequence for s in line[2]]
         sequence = strand_table_to_sequence(st)
         structure = line[3].replace(' ','')
         anon = Complex(sequence, list(structure), name = name)
@@ -176,11 +174,11 @@ def read_pil_line(raw):
                 except SingletonError:
                     try:
                         # The character refers to a composite domain.
-                        subseq = Complex(None, None, name = d).sequence
+                        subseq = Strand(None, None, name = d).sequence
                     except SingletonError:
                         try:
                             # The character refers to the complement of a composite domain.
-                            complement = Complex(None, None, name = comp(d)).sequence
+                            complement = Strand(None, None, name = comp(d)).sequence
                             subseq = [~d for d in reversed(complement)]
                         except SingletonError:
                             raise PilFormatError(f"Cannot find domain: {d}.")
