@@ -180,7 +180,7 @@ class TestReadFile(unittest.TestCase):
         assert 'A' in out['complexes']
         assert out['complexes']['A'].kernel_string == 'a x( b( y( z* c* ) ) )'
         assert 'B' in out['complexes']
-        assert out['complexes']['B'].sequence == [DomainS('a'), DomainS('x'), DomainS('b'), DomainS('y'), '+', DomainS('y*'), DomainS('b*'), DomainS('x*'), DomainS('b')]
+        assert list(out['complexes']['B'].sequence) == [DomainS('a'), DomainS('x'), DomainS('b'), DomainS('y'), '+', DomainS('y*'), DomainS('b*'), DomainS('x*'), DomainS('b')]
         assert out['complexes']['B'].kernel_string == 'a x( b( y( + ) ) ) b'
 
 if __name__ == '__main__':

@@ -159,19 +159,15 @@ class ComplexS(metaclass = Singleton):
     """ Complex object (Singleton).
 
     If the same complex is initialized twice (e.g. in a different rotation),
-    then this returns the existing complex.
-
-    Sequence and structure can be specified on the domain or on the nucleotide
-    level, but they have to be of the same length. Although not implemented,
-    one may define special characters for secondary structures that are more
-    diverse than a regular dot-bracket string, e.g. 'h' = '(', '.', ')'
+    then this returns the existing complex.  Sequence and structure should be
+    specified on the domain level, and they have to be of the same length. 
 
     Args:
-        sequence (list): A domain-level or nucleotide-level sequence.
+        sequence (list): A domain-level sequence.
         structure (list): A structure in dot-bracket notation.
-        name (str, optional): Name of this domain.
+        name (str, optional): A name tag unique for this complex.
     """
-    PREFIX = 'cplx'
+    PREFIX = 'c'
     ID = 1
 
     @classmethod
@@ -180,48 +176,41 @@ class ComplexS(metaclass = Singleton):
         if sequence is None:
             if name is None:
                 raise ObjectInitError('Insufficient arguments for Complex initialization.')
-            return (None, name, {})
-        if name is None:
-            if prefix is None:
-                prefix = f'{cls.PREFIX}'
-            name = f'{prefix}{cls.ID}'
-        if structure is None: 
-            if '+' in sequence:
-                raise NotImplementedError('ComplexS "strand" mode must only contain a single strand.')
-            sstr = tuple('*' for _ in range(len(sequence)))
-            canon = (tuple(map(str, sequence)), sstr)
-            newargs = {'canon': canon, 'turns': None}
-            return (canon, name, newargs)
-        if len(sequence) != len(structure):
-            raise ObjectInitError(f'Complex initialization: {len(sequence)} != {len(structure)}.')
-        cdict = {}
-        for e, (rseq, rstr) in enumerate(rotate_complex_db(sequence, structure)):
-            rcplx = tuple((tuple(map(str, rseq)), tuple(rstr)))
-            if rcplx in cls._instanceCanon:
-                canon = rcplx
-                turns = e
-                break
-            cdict[rcplx] = e # How many rotations to the canonical form
+            canon = None
+            newargs = {}
         else:
-            canon = sorted(cdict, key = lambda x:(x[0], x[1]))[0]
-            turns = cdict[canon] # How many rotations to the canonical form
-        tot = len(make_strand_table(sequence))
-        turns = wrap(-turns, tot) # How many rotations from the canonical form
-
-        newargs = {'canon': canon, 'turns': turns}
+            if name is None:
+                name = f'{cls.PREFIX}{cls.ID}' if prefix is None else f'{prefix}{cls.ID}'
+            if len(sequence) != len(structure):
+                raise ObjectInitError('Complex initialization error: ' + \
+                                     f'{len(sequence)} != {len(structure)}.')
+            cdict = {} # Find canonical form.
+            for e, (rseq, rstr) in enumerate(rotate_complex_db(sequence, structure)):
+                rcplx = tuple((tuple(map(str, rseq)), tuple(rstr)))
+                if rcplx in cls._instanceCanon:
+                    canon = rcplx
+                    turns = e
+                    break
+                cdict[rcplx] = e # How many rotations to the canonical form
+            else:
+                canon = sorted(cdict, key = lambda x:(x[0], x[1]))[0]
+                turns = cdict[canon] # How many rotations to the canonical form
+            tot = len(make_strand_table(sequence))
+            turns = wrap(-turns, tot) # How many rotations from the canonical form
+            newargs = {'canon': canon, 'turns': turns}
         return (canon, name, newargs)
 
-    def __init__(self, sequence, structure, name = None, prefix = None, 
-                 canon = None, turns = None):
-        if name is None:
-            if prefix is None:
-                prefix = f'{self.__class__.PREFIX}'
-            name = f'{prefix}{self.__class__.ID}'
-            self.__class__.ID += 1
+    def __init__(self, sequence, structure, name = None, 
+                 prefix = None, canon = None, turns = None):
         # This must have been set by the identifiers method.
+        cls = self.__class__
         assert canon is not None
-        assert turns is not None or structure is None
+        assert turns is not None
+        if name is None:
+            name = f'{cls.PREFIX}{cls.ID}' if prefix is None else f'{prefix}{cls.ID}'
+            self.__class__.ID += 1
 
+        # Private variables:
         self._sequence = sequence
         self._structure = structure
         self._name = name
@@ -232,12 +221,11 @@ class ComplexS(metaclass = Singleton):
         self._strand_table = None
         self._pair_table = None
         self._loop_index = None
-
         self._domains = None
-        self._concentration = None
-        self._enclosed_domains = None
         self._exterior_domains = None
+        self._enclosed_domains = None
         self._exterior_loops = None
+        self._concentration = None
 
     @property
     def name(self):
@@ -266,7 +254,7 @@ class ComplexS(metaclass = Singleton):
     def turns(self, value):
         # Turns = 0 rotates the object into the canonical form.
         # Turns = 1 rotates the object into canonical form + 1 turn.
-        tot = len(self.__strand_table)
+        tot = self.size
         t = wrap(-self._turns + value, tot)
         for e, (seq, sst) in enumerate(self.rotate()):
             if e == t:
@@ -275,7 +263,54 @@ class ComplexS(metaclass = Singleton):
                 self._turns = wrap(value, tot)
                 break
         else:
-            raise ValueError('Something went terribly wrong... ?')
+            raise ObjectInitError('Something went terribly wrong when rotating the complex.')
+
+    @property
+    def sequence(self):
+        """ list: sequence the complex object. """
+        return iter(self._sequence)
+
+    @property
+    def strand_table(self):
+        if not self._strand_table:
+            self._strand_table = make_strand_table(self._sequence)
+        for strand in self._strand_table:
+            yield list(strand) # Deepcopy
+
+    @property
+    def structure(self):
+        """ list: the complex structure. """
+        return iter(self._structure)
+
+    @property
+    def pair_table(self):
+        """ returns a structure in multistranded pair-table format. """
+        if not self._pair_table:
+            self._pair_table = make_pair_table(self._structure)
+        for locs in self._pair_table:
+            yield list(locs) # Deepcopy
+
+    @property
+    def __strand_table(self):
+        if not self._strand_table:
+            self._strand_table = make_strand_table(self._sequence)
+        return self._strand_table
+
+    @property
+    def __pair_table(self):
+        if not self._pair_table:
+            self._pair_table = make_pair_table(self._structure)
+        return self._pair_table
+
+    @property
+    def __loop_index(self):
+        if not self._loop_index:
+            self._loop_index, self._exterior_loops = make_loop_index(self.pair_table)
+        return self._loop_index
+
+    @property
+    def size(self):
+        return len(self.__strand_table)
 
     @property
     def concentration(self):
@@ -297,74 +332,13 @@ class ComplexS(metaclass = Singleton):
         val = convert_units(val, uni, out)
         return (mod, val, out)
 
-    @property
-    def size(self):
-        return len(self.__strand_table)
-
-    @property
-    def kernel_string(self):
-        """ str: print sequence and structure in `kernel` notation. """
-        seq = self._sequence
-        sst = self._structure
-        if sst is None:
-            return ' '.join(map(str, self.sequence))
-        knl = ''
-        for i in range(len(seq)):
-            if sst[i] == '+':
-                knl += str(sst[i]) + ' '
-            elif sst[i] == ')':
-                knl += str(sst[i]) + ' '
-            elif sst[i] == '(':
-                knl += str(seq[i]) + str(sst[i]) + ' '
-            else:
-                knl += str(seq[i]) + ' '
-        return knl[:-1]
-
     def rotate(self, turns = None):
-        return rotate_complex_db(self.sequence, self.structure, turns = turns)
+        return rotate_complex_db(self._sequence, self._structure, turns = turns)
 
     def rotate_pt(self, turns = None):
         # Make test to show that we must not use internal strand_table and pair_table!
-        return rotate_complex_pt(self.strand_table, self.pair_table, turns = turns)
+        return rotate_complex_pt(list(self.strand_table), list(self.pair_table), turns = turns)
     
-    @property
-    def sequence(self):
-        """ list: sequence the complex object. """
-        return self._sequence[:]
-
-    @property
-    def strand_table(self):
-        return make_strand_table(self._sequence)
-
-    @property
-    def structure(self):
-        """ list: the complex structure. """
-        return self._structure[:] if self._structure is not None else None
-
-    @property
-    def pair_table(self):
-        """ returns a structure in multistranded pair-table format. """
-        # Make a new pair_table every time, it might get modified.
-        return make_pair_table(self._structure)
-
-    @property
-    def __strand_table(self):
-        if not self._strand_table:
-            self._strand_table = make_strand_table(self._sequence)
-        return self._strand_table
-
-    @property
-    def __pair_table(self):
-        if not self._pair_table:
-            self._pair_table = make_pair_table(self._structure)
-        return self._pair_table
-
-    @property
-    def __loop_index(self):
-        if not self._loop_index:
-            self._loop_index, self._exterior_loops = make_loop_index(self.__pair_table)
-        return self._loop_index
-
     # ------ can be mutable but must yield the same canonical form!
     def strand_length(self, pos):
         return len(self.__strand_table[pos])
@@ -427,7 +401,7 @@ class ComplexS(metaclass = Singleton):
         Determines whether the structure includes pairs only between complementary domains.
         Returns True if all paired domains are complementary, raises an Exception otherwise
         """
-        for si, strand in enumerate(self.__pair_table):
+        for si, strand in enumerate(self.pair_table):
             for di, domain in enumerate(strand):
                 loc = (si,di)
                 cloc = self._pair_table[si][di] 
@@ -455,6 +429,23 @@ class ComplexS(metaclass = Singleton):
             except SingletonError as err:
                 yield err.existing
         return
+
+    @property
+    def kernel_string(self):
+        """ str: print sequence and structure in `kernel` notation. """
+        seq = self._sequence
+        sst = self._structure
+        knl = ''
+        for i in range(len(seq)):
+            if sst[i] == '+':
+                knl += str(sst[i]) + ' '
+            elif sst[i] == ')':
+                knl += str(sst[i]) + ' '
+            elif sst[i] == '(':
+                knl += str(seq[i]) + str(sst[i]) + ' '
+            else:
+                knl += str(seq[i]) + ' '
+        return knl[:-1]
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.name}, {self.kernel_string})'
@@ -496,7 +487,50 @@ class ComplexS(metaclass = Singleton):
         return hash(self.canonical_form)
 
 class StrandS(ComplexS):
-    pass
+    PREFIX = 's'
+    ID = 1
+    @classmethod
+    def identifiers(cls, sequence, name = None, prefix = None, **kwargs):
+        """ tuple: A method that must be accessible without initializing the object. """
+        if sequence is None:
+            if name is None:
+                raise ObjectInitError('Insufficient arguments for Strand initialization.')
+            canon = None
+            newargs = {}
+        elif '+' in sequence:
+            raise NotImplementedError('ComplexS "strand" mode must only contain a single strand.')
+        else:
+            if name is None:
+                name = f'{cls.PREFIX}{cls.ID}' if prefix is None else f'{prefix}{cls.ID}'
+            sstr = tuple('*' for _ in range(len(sequence)))
+            canon = (tuple(map(str, sequence)), sstr)
+            newargs = {'canon': canon, 'turns': 0}
+        return (canon, name, newargs)
+
+    def __init__(self, sequence, name = None, prefix = None, canon = None, turns = None):
+        # This must have been set by the identifiers method.
+        cls = self.__class__
+        assert turns == 0
+        assert canon is not None
+        if name is None:
+            name = f'{cls.PREFIX}{cls.ID}' if prefix is None else f'{prefix}{cls.ID}'
+            self.__class__.ID += 1
+
+        # Private variables:
+        self._sequence = sequence
+        self._name = name
+        self._structure = None
+        self._canon = canon
+        self._turns = turns
+
+        # Initialized on demand:
+        self._strand_table = None
+        self._domains = None
+        self._concentration = None
+
+    @property
+    def structure(self):
+        return None
 
 class MacrostateS(metaclass = Singleton):
     """ A set of complexes (singleton). 

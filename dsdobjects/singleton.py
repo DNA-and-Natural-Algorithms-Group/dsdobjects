@@ -71,7 +71,12 @@ class Singleton(type):
                 if objN is None:
                     raise SingletonError(f'Duplicate Singleton {cls.__name__}({name} vs. {objC.name}).', existing = objC)
                 elif objC is None:
-                    raise SingletonError(f'Duplicate Singleton {cls.__name__}({name}).', existing = objN)
+                    # Let's not return exisiting here, although we could.  It
+                    # might not be clear that this can happen when there are
+                    # automated naming problems. E.g. one expects the Error
+                    # because the canonical form object exists already, but instead
+                    # you get a different complex back just because of the name ...
+                    raise SingletonError(f'Duplicate Singleton {cls.__name__}({name}).')
                 if not (objN is objC):
                     raise SingletonError(f'Duplicate Singleton {cls.__name__}: name ({name}) and canonical form match different objects!')
                 Sobj = objN

@@ -143,11 +143,11 @@ def read_pil_line(raw):
     elif line[0] == 'composite-domain' and Strand is not None:
         # This could be a strand definition or a composite domain.
         sequence = [Domain(d) for d in line[2]]
-        anon = Strand(sequence, None, name)
+        anon = Strand(sequence, name)
         return anon
  
     elif line[0] == 'strand-complex' and Complex is not None:
-        st = [Strand(None, None, name = s).sequence for s in line[2]]
+        st = [list(Strand(None, name = s).sequence) for s in line[2]]
         sequence = strand_table_to_sequence(st)
         structure = line[3].replace(' ','')
         anon = Complex(sequence, list(structure), name = name)
@@ -174,11 +174,11 @@ def read_pil_line(raw):
                 except SingletonError:
                     try:
                         # The character refers to a composite domain.
-                        subseq = Strand(None, None, name = d).sequence
+                        subseq = list(Strand(None, name = d).sequence)
                     except SingletonError:
                         try:
                             # The character refers to the complement of a composite domain.
-                            complement = Strand(None, None, name = comp(d)).sequence
+                            complement = list(Strand(None, name = comp(d)).sequence)
                             subseq = [~d for d in reversed(complement)]
                         except SingletonError:
                             raise PilFormatError(f"Cannot find domain: {d}.")

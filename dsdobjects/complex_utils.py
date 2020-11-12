@@ -41,18 +41,18 @@ def make_pair_table(ss, strand_break = '+', ignore = set('.')):
 
     strand = []
     pair_table.append(strand)
-    for char in list(ss):
-        if char == strand_break :
+    for char in ss:
+        if char == strand_break:
             strand_index += 1
             domain_index = 0
             strand = []
             pair_table.append(strand)
             continue
-        if char == '(' :
+        if char == '(':
             strand.append(None)
             stack.append((strand_index, domain_index))
             domain_index += 1
-        elif char == ")" :
+        elif char == ')':
             try:
                 loc = stack.pop()
             except IndexError as e:
@@ -63,9 +63,9 @@ def make_pair_table(ss, strand_break = '+', ignore = set('.')):
         elif char in set(ignore): # unpaired
             strand.append(None)
             domain_index += 1
-        else :
+        else:
             raise SecondaryStructureError(f"Unexpected character in sequence: '{char}'.")
-    if len(stack) > 0 :
+    if len(stack) > 0:
         raise SecondaryStructureError("Too few opening parenthesis '(' in secondary structure.")
     return pair_table 
 
@@ -80,11 +80,11 @@ def pair_table_to_dot_bracket(pt, strand_break = '+', join = False):
         for di, pair in enumerate(strand):
             if pair is None:
                 out += '.'
-            else :
+            else:
                 locus = (si, di)
-                if locus < pair :
+                if locus < pair:
                     out += '('
-                else :
+                else:
                     out += ')'
     return out if join else list(out)
 
@@ -108,7 +108,7 @@ def strand_table_to_sequence(st, strand_break = '+', join = False):
     else:
         return reduce(lambda a, b: a + [strand_break] + b, st)
 
-def make_loop_index(ptable, components = False):
+def make_loop_index(pt, components = False):
     """ Return the loop index of a secondary structure.
 
     Each nucleotide gets a number assigned. Two nucleotides with the
@@ -130,7 +130,7 @@ def make_loop_index(ptable, components = False):
 
     stack = []
     (cl, nl) = (0, 0)
-    for si, strand in enumerate(ptable):
+    for si, strand in enumerate(pt):
         loop = []
         loop_index.append(loop)
         ext = [cl, None]
@@ -138,14 +138,14 @@ def make_loop_index(ptable, components = False):
             loc = (si, di)
             if pair is None:
                 pass
-            elif loc < pair : # '('
+            elif loc < pair: # '('
                 nl += 1
                 cl = nl
                 stack.append(loc)
             loop.append(cl)
-            if pair and pair < loc : # ')'
+            if pair and pair < loc: # ')'
                 _ = stack.pop()
-                try :
+                try:
                     ploc = stack[-1]
                     cl = loop_index[ploc[0]][ploc[1]]
                 except IndexError:

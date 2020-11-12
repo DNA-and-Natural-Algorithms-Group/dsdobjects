@@ -11,11 +11,10 @@ from dsdobjects import (SecondaryStructureError,
                         SingletonError,
                         show_singletons,
                         clear_singletons)
-from dsdobjects.base_classes import DomainS, ComplexS
+from dsdobjects.base_classes import DomainS, StrandS, ComplexS
 
 SKIP = False
 SKIP_TOXIC = True
-SKIP_DEPRECATED = True
 
 class MyDomainS(DomainS):
     pass
@@ -170,55 +169,34 @@ class TestSingletonComplex(unittest.TestCase):
         clear_singletons(DomainS)
         clear_singletons(ComplexS)
 
-    def test_nl_initialization_01(self):
-        foo = ComplexS(sequence = list('RNNNY'), 
-                       structure = list('(...)'), 
-                       name = 'a')
-        bar = ComplexS(sequence = list('RNNNY'), structure = list('(...)'), name = 'a')
-        assert foo == bar
-
-        with self.assertRaises(SingletonError):
-            bar = ComplexS(sequence = list('RNNNY'), structure = list('(...)'), name = 'b')
-
-        with self.assertRaises(SingletonError):
-            bar = ComplexS(sequence = list('RNANY'), structure = list('(...)'), name = 'a')
-
-        self.assertEqual(foo.sequence, list('RNNNY'))
-        self.assertEqual(foo.structure, list('(...)'))
-        self.assertEqual(foo.strand_table, [list('RNNNY')])
-        self.assertEqual(next(foo.rotate(1)), (foo.sequence, foo.structure))
-
-        del foo, bar
-        bar = ComplexS(sequence = list('RNANY'), structure = list('(...)'), name = 'a')
-
     def test_dl_initialization_01(self):
         d1, d2, d3 = self.d1, self.d2, self.d3
         d1c, d2c, d3c = self.d1c, self.d2c, self.d3c
 
         foo = ComplexS(sequence =  [d1,  d2,  d3,  '+', d1,  '+', d1c, d3c, d1c, d2],
                        structure = ['.', '.', '(', '+', '(', '+', ')', ')', '.', '.'],
-                       name = 'fred')
+                       name = 'foo')
         try:
             bar = ComplexS(sequence = [d1c, d3c, d1c, d2, '+', d1, d2, d3, '+', d1], 
                        structure = list('((..+..)+)'))
         except SingletonError as err:
             bar = err.existing
-
-        assert foo is bar
-        self.assertEqual(foo, bar)
+        self.assertTrue(foo is bar)
         self.assertTrue(foo == bar)
+
+        seq = list(foo.sequence)
+        assert seq[3] == '+'
+        seq[3] = '-'
+        assert seq != list(foo.sequence)
 
         with self.assertRaises(SingletonError):
             bar = ComplexS(sequence = [d1c, d3c, d1c, d2, '+', d1, d2, d3, '+', d1], 
                            structure = list('((..+..)+)'), 
-                           name = 'barney')
+                           name = 'bar')
 
-        #for e, (x, y) in enumerate(bar.rotate()):
-        #    print(e, list(map(str, x)), y)
-
-        assert foo.canonical_form == (('d1', '+', 'd1*', 'd3*', 'd1*', 'd2', '+', 'd1', 'd2', 'd3'), ('(', '+', ')', '(', '.', '.', '+', '.', '.', ')'))
+        assert foo.canonical_form == (('d1', '+', 'd1*', 'd3*', 'd1*', 'd2', '+', 'd1', 'd2', 'd3'), 
+                                      ('(', '+', ')', '(', '.', '.', '+', '.', '.', ')'))
         assert foo.turns == 1 
-
         foo.turns = 0 # rotate foo into canonical form ...
         assert foo.kernel_string == 'd1( + ) d3*( d1* d2 + d1 d2 )'
         foo.turns += 1
@@ -278,27 +256,10 @@ class TestSingletonComplex(unittest.TestCase):
         foo = ComplexS(sequence = [d1, d2, d3, '+', d1, '+', d1c, d3c, d1c, d2], 
                        structure = list('..(+(+))..'), name = 'foo')
         pt = [[None, None, (2, 1)], [(2, 0)], [(1, 0), (0, 2), None, None]]
-        self.assertEqual(foo.pair_table, pt)
-        pt = foo.pair_table
-        pt[0][2] = None
-        self.assertFalse(foo.pair_table == pt)
-
-    def test_strand_initialization_01(self):
-        foo = ComplexS(sequence = list('RNNNY'), structure = None, name = 'foo')
-        assert str(foo) == 'foo'
-        assert foo.size == 1
-        assert foo.canonical_form == (('R', 'N', 'N', 'N', 'Y'), tuple('*****'))
-        assert foo.sequence == ['R', 'N', 'N', 'N', 'Y']
-        assert foo.structure is None
-
-    def test_strand_initialization_02(self):
-        d1, d2, d3 = self.d1, self.d2, self.d3
-        foo = ComplexS(sequence = [d1, d2, ~d3], structure = None, name = 'foo')
-        assert str(foo) == 'foo'
-        assert foo.size == 1
-        assert foo.canonical_form == (('d1', 'd2', 'd3*'), tuple('***'))
-        assert foo.sequence == [d1, d2, ~d3]
-        assert foo.structure is None
+        self.assertEqual(list(foo.pair_table), pt)
+        pt = list(foo.pair_table)
+        pt[1][0] = None
+        self.assertFalse(list(foo.pair_table) == pt)
 
 @unittest.skipIf(SKIP, "skipping tests.")
 class TestAutomaticComplex(unittest.TestCase):
@@ -324,11 +285,11 @@ class TestAutomaticComplex(unittest.TestCase):
             a = ComplexS(None, None, name = 'hello')
         a = ComplexS(list('ABCDEFG'), list('.......')) 
         assert a.kernel_string == 'A B C D E F G'
-        assert str(a) == 'cplx1'
+        assert str(a) == ComplexS.PREFIX + '1'
         b = ComplexS(list('A'), list('.'))
         assert b.kernel_string == 'A'
-        assert str(b) == 'cplx2'
-        assert a is ComplexS(None, None, name = 'cplx1')
+        assert str(b) == ComplexS.PREFIX + '2'
+        assert a is ComplexS(None, None, name = ComplexS.PREFIX + '1')
     
     def test_initialization_02(self):
         d1, d2 = self.d1, self.d2
@@ -336,6 +297,13 @@ class TestAutomaticComplex(unittest.TestCase):
         assert a is ComplexS([d2, ~d1, '+', d1, d1, ~d2], list('((+).)'), name = a.name)
         assert a is ComplexS(None, None, name = a.name)
 
+    def test_initialization_03(self):
+        ComplexS.ID = 1
+        ComplexS.PREFIX = 'c'
+        c1 = ComplexS(list('ABCDEFG'), list('.......'), name = 'c1') 
+        with self.assertRaises(SingletonError):
+            c2 = ComplexS(list('BACEFGD'), list('.......'))
+    
     def test_exceptions(self):
         d1, d2 = self.d1, self.d2
         a = ComplexS([d1, d1, ~d2, '+', d2, ~d1], list('(.(+))'))
@@ -350,6 +318,27 @@ class TestAutomaticComplex(unittest.TestCase):
         d1, d2 = self.d1, self.d2
         a = ComplexS([d1, d1, ~d2, '+', d2, ~d1, '+', d2], list('(.(+))+.'))
         assert len(list(a.split())) == 2
+
+@unittest.skipIf(SKIP, "skipping tests.")
+class TestStrandS(unittest.TestCase):
+    def setUp(self):
+        self.d1 = DomainS('d1', length = 20)
+        self.d2 = DomainS('d2', length = 5)
+        self.d3 = DomainS('d3', length = 15)
+
+    def tearDown(self):
+        clear_singletons(DomainS)
+        clear_singletons(StrandS)
+
+    def test_strand_initialization_01(self):
+        d1, d2, d3 = self.d1, self.d2, self.d3
+        foo = StrandS(sequence = [d1, d2, ~d3], name = 'foo')
+        assert str(foo) == 'foo'
+        assert foo.size == 1
+        assert foo.canonical_form == (('d1', 'd2', 'd3*'), tuple('***'))
+        assert list(foo.sequence) == [d1, d2, ~d3]
+        assert foo.structure is None
+
 
 if __name__ == '__main__':
     unittest.main()
