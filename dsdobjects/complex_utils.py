@@ -212,6 +212,7 @@ def wrap(x, m):
     return (x % m + m) % m
 
 def rotate_complex_db(seq, sst, turns = None, join = False):
+    # Would this be much faster when using strings?
     stab = make_strand_table(seq)
     ptab = make_pair_table(sst)
     assert all(len(x) == len(y) for x, y in zip(stab, ptab))
@@ -241,4 +242,35 @@ def rotate_complex_pt(stab, ptab, turns = None):
             yield (s, p)
     return
 
+def rotate_complex_once(seq, sst, turns = None):
+    # This function turns out to be much faster than the other two...
+    stack = []
+    if "+" in seq:
+        p = seq.index('+')
+        seq = seq[p + 1:] + ["+"] + seq[:p]
+        nstr = list(sst)
+        stack = []
+        for i in range(p):
+            if nstr[i] == "(":
+                stack.append(i)
+            elif nstr[i] == ")":
+                try:
+                    stack.pop()
+                except IndexError:
+                    raise DSDObjectsError("Unbalanced parenthesis.")
+        for i in stack:
+            nstr[i] = ")"
+        stack = []
+        for i in reversed(range(p + 1, len(nstr))):
+            if nstr[i] == ")":
+                stack.append(i)
+            elif nstr[i] == "(":
+                try :
+                    stack.pop()
+                except IndexError:
+                    raise DSDObjectsError("Unbalanced parenthesis.")
+        for i in stack:
+            nstr[i] = "("
+        sst = nstr[p + 1:] + ["+"] + nstr[:p]
+    return seq, sst
 

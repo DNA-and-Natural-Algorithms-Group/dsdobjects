@@ -196,17 +196,50 @@ class TestSingletonComplex(unittest.TestCase):
 
         assert foo.canonical_form == (('d1', '+', 'd1*', 'd3*', 'd1*', 'd2', '+', 'd1', 'd2', 'd3'), 
                                       ('(', '+', ')', '(', '.', '.', '+', '.', '.', ')'))
-        assert foo.turns == 1 
+        assert foo.turns == 2 
         foo.turns = 0 # rotate foo into canonical form ...
         assert foo.kernel_string == 'd1( + ) d3*( d1* d2 + d1 d2 )'
         foo.turns += 1
-        assert foo.kernel_string == 'd1 d2 d3( + d1( + ) ) d1* d2'
-        foo.turns += 1
         assert foo.kernel_string == 'd1*( d3*( d1* d2 + d1 d2 ) + )'
+        foo.turns += 1
+        assert foo.kernel_string == 'd1 d2 d3( + d1( + ) ) d1* d2'
         foo.turns += 1
         assert foo.kernel_string == 'd1( + ) d3*( d1* d2 + d1 d2 )'
         assert foo.turns == 0
 
+    def test_rotations(self):
+        d1, d2, d3 = self.d1, self.d2, self.d3
+        d1c, d2c, d3c = self.d1c, self.d2c, self.d3c
+
+        foo = ComplexS(sequence =  [d1,  d2,  d3,  '+', d1,  '+', d1c, d3c, d1c, d2],
+                       structure = ['.', '.', '(', '+', '(', '+', ')', ')', '.', '.'],
+                       name = 'foo')
+        loc0 = (0, 2)
+        loc1 = (1, 0)
+        loc2 = (2, 3)
+
+        ploc0 = foo.get_paired_loc(loc0)
+        dom0 = foo.get_domain(loc0)
+        assert ploc0 == (2, 1)
+        assert dom0 is d3
+        ploc1 = foo.get_paired_loc(loc1)
+        dom1 = foo.get_domain(loc1)
+        assert dom1 is d1
+        assert ploc1 == (2, 0)
+        ploc2 = foo.get_paired_loc(loc2)
+        dom2 = foo.get_domain(loc2)
+        assert ploc2 == None
+        assert dom2 is d2
+
+        for e, (x, y) in enumerate(foo.rotate_pt()):
+            l0 = foo.rotate_pairtable_loc(loc0, e)
+            l1 = foo.rotate_pairtable_loc(loc1, e)
+            l2 = foo.rotate_pairtable_loc(loc2, e)
+            assert x[l0[0]][l0[1]] is dom0
+            assert x[l1[0]][l1[1]] is dom1
+            assert x[l2[0]][l2[1]] is dom2
+
+ 
     def test_init_disconnected(self):
         d1, d2, d3 = self.d1, self.d2, self.d3
         d1c, d2c, d3c = self.d1c, self.d2c, self.d3c

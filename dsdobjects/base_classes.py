@@ -11,8 +11,7 @@ from .complex_utils import (SecondaryStructureError,
                             make_loop_index, 
                             wrap,
                             split_complex_pt,
-                            rotate_complex_db,
-                            rotate_complex_pt)
+                            rotate_complex_once)
 
 class ObjectInitError(Exception):
     pass
@@ -185,23 +184,25 @@ class ComplexS(metaclass = Singleton):
                 raise ObjectInitError('Complex initialization error: ' + \
                                      f'{len(sequence)} != {len(structure)}.')
             cdict = {} # Find canonical form.
-            for e, (rseq, rstr) in enumerate(rotate_complex_db(sequence, structure)):
+            rseq, rstr = sequence, structure
+            for e in range(len(make_strand_table(sequence))):
                 rcplx = tuple((tuple(map(str, rseq)), tuple(rstr)))
                 if rcplx in cls._instanceCanon:
                     canon = rcplx
                     turns = e
                     break
                 cdict[rcplx] = e # How many rotations to the canonical form
+                rseq, rstr = rotate_complex_once(rseq, rstr)
             else:
                 canon = sorted(cdict, key = lambda x:(x[0], x[1]))[0]
                 turns = cdict[canon] # How many rotations to the canonical form
             tot = len(make_strand_table(sequence))
             turns = wrap(-turns, tot) # How many rotations from the canonical form
-            newargs = {'canon': canon, 'turns': turns}
+            newargs = {'canon': canon, 'turns': turns, 'rcplxs': cdict.keys()}
         return (canon, name, newargs)
 
     def __init__(self, sequence, structure, name = None, 
-                 prefix = None, canon = None, turns = None):
+                 prefix = None, canon = None, turns = None, rcplxs = None):
         # This must have been set by the identifiers method.
         cls = self.__class__
         assert canon is not None
@@ -226,6 +227,10 @@ class ComplexS(metaclass = Singleton):
         self._enclosed_domains = None
         self._exterior_loops = None
         self._concentration = None
+
+        # A speedup that uses some memory ...
+        for rcplx in rcplxs:
+            cls._instanceCanon[rcplx] = self
 
     @property
     def name(self):
@@ -333,11 +338,18 @@ class ComplexS(metaclass = Singleton):
         return (mod, val, out)
 
     def rotate(self, turns = None):
-        return rotate_complex_db(self._sequence, self._structure, turns = turns)
+        if turns is None:
+            turns = self.size
+        yield list(self.sequence), list(self.structure)
+        x, y = self._sequence, self._structure
+        for _ in range(turns-1):
+            x, y = rotate_complex_once(x, y)
+            yield x, y
 
     def rotate_pt(self, turns = None):
         # Make test to show that we must not use internal strand_table and pair_table!
-        return rotate_complex_pt(list(self.strand_table), list(self.pair_table), turns = turns)
+        for (x, y) in self.rotate(turns):
+            yield make_strand_table(x), make_pair_table(y)
     
     # ------ can be mutable but must yield the same canonical form!
     def strand_length(self, pos):
@@ -358,11 +370,9 @@ class ComplexS(metaclass = Singleton):
             raise IndexError
         return self.__pair_table[loc[0]][loc[1]]
 
-    def rotate_pairtable_loc(self, loc, n=None):
+    def rotate_pairtable_loc(self, loc, n):
         """ Maps the locus of a given pair-table to a new rotation.  """
-        if n is None:
-            n = self.size
-        return (wrap(loc[0] + n, self.size), loc[1])
+        return (wrap(loc[0] - n, self.size), loc[1])
 
     @property
     def domains(self):

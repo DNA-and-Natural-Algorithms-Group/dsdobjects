@@ -60,7 +60,7 @@ class Singleton(type):
         # finding the canonical form is expensive and one would like to provide
         # a new object with the aquired data. 
         canon, name, kwadd = cls.identifiers(*args, **kwargs)
-        assert not any(arg in kwargs for arg in kwadd.values())
+        assert not any((arg in kwargs and kwargs[arg] is not None) for arg in kwadd.keys())
         kwargs.update(kwadd)
 
         Sobj = None

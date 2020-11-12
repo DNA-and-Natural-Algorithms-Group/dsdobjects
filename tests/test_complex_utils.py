@@ -16,6 +16,7 @@ from dsdobjects.complex_utils import (SecondaryStructureError,
                                       split_complex_pt,
                                       rotate_complex_db,
                                       rotate_complex_pt,
+                                      rotate_complex_once,
                                       make_loop_index)
 
 SKIP = False
@@ -318,6 +319,14 @@ class TestComplexOperations(unittest.TestCase):
         out = list(rotate_complex_db(se, ss, turns = 10))
         assert len(out) == 10
         assert (se, ss) != out[0]
+
+    def test_rotate_complex_once(self):
+        se = list('CCCT+TTGGG')
+        ss = list('(((.+..)))')
+        re = list('TTGGG+CCCT')
+        rs = list('..(((+))).')
+        out = rotate_complex_once(se, ss)
+        assert out == (re, rs)
 
 if __name__ == '__main__':
     unittest.main()
