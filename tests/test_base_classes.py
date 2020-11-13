@@ -130,6 +130,8 @@ class TestAutomaticDomain(unittest.TestCase):
         x = DomainS('a', 15)
         y = DomainS('a*')
         assert len(x) == len(y)
+        assert x is ~y
+        assert y is ~x
 
         x = DomainS('b*', 5)
         with self.assertRaises(SingletonError):
@@ -138,6 +140,8 @@ class TestAutomaticDomain(unittest.TestCase):
             y = DomainS('b', 10)
         y = DomainS('b', 5)
         assert len(x) == len(y)
+        assert x is ~y
+        assert y is ~x
 
     def test_immutable_forms(self):
         a = DomainS('a', 15)

@@ -45,7 +45,7 @@ def make_loop_index(s):
 def flint(n):
     """ int or float: of a number. """
     try:
-        return int(n) if float(n) == int(float(n)) else float(n)
+        return int(float(n)) if float(n) == int(float(n)) else float(n)
     except OverflowError:
         return n
 
