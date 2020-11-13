@@ -347,10 +347,30 @@ class TestAutomaticComplex(unittest.TestCase):
         del a
         b = ComplexS([d1, d1, ~d2, '+', d2, ~d1], list('(.(+))'))
 
-    def test_slitting(self):
+    def test_splitting(self):
         d1, d2 = self.d1, self.d2
         a = ComplexS([d1, d1, ~d2, '+', d2, ~d1, '+', d2], list('(.(+))+.'))
         assert len(list(a.split())) == 2
+
+    def test_split_exception(self):
+        d1, d2 = self.d1, self.d2
+        ComplexS.ID = 1
+        ComplexS.PREFIX = 'c'
+        c1 = ComplexS([d1, d1, ~d2, '+', d2, ~d1], list('(.(+))'), name = 'c1')
+        c2 = ComplexS([d2], list('.'), name = 'c2')
+        a = ComplexS([d1, d1, ~d2, '+', d2, ~d1, '+', d2], list('(.(+))+.'), name = 'a')
+        with self.assertRaises(SingletonError):
+            list(a.split())
+
+    def test_common_practice(self):
+        d1, d2 = self.d1, self.d2
+        ComplexS.ID = 1
+        ComplexS.PREFIX = 'c'
+        c1 = ComplexS([d1, d1, ~d2, '+', d2, ~d1], list('(.(+))'), name = 'c1')
+        try:
+            c2 = ComplexS([d2], list('.'))
+        except SingletonError as err:
+            assert err.existing is None
 
 @unittest.skipIf(SKIP, "skipping tests.")
 class TestStrandS(unittest.TestCase):

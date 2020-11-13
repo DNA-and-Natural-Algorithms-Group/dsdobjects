@@ -437,6 +437,9 @@ class ComplexS(metaclass = Singleton):
             try:
                 yield self.__class__(nseq, nsst)
             except SingletonError as err:
+                if err.existing is None:
+                    log.warning(f'Automated naming of {self.__class__} object failed. You may have to change {self.__class__}.PREFIX.')
+                    raise err
                 yield err.existing
         return
 
