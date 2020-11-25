@@ -257,7 +257,7 @@ def rotate_complex_once(seq, sst, turns = None):
                 try:
                     stack.pop()
                 except IndexError:
-                    raise DSDObjectsError("Unbalanced parenthesis.")
+                    raise SecondaryStructureErrro("Unbalanced parenthesis.")
         for i in stack:
             nstr[i] = ")"
         stack = []
@@ -268,7 +268,7 @@ def rotate_complex_once(seq, sst, turns = None):
                 try :
                     stack.pop()
                 except IndexError:
-                    raise DSDObjectsError("Unbalanced parenthesis.")
+                    raise SecondaryStructureError("Unbalanced parenthesis.")
         for i in stack:
             nstr[i] = "("
         sst = nstr[p + 1:] + ["+"] + nstr[:p]

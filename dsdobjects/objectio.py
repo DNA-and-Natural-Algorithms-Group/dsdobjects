@@ -5,6 +5,7 @@
 import logging
 log = logging.getLogger(__name__)
 
+import gc
 from .singleton import SingletonError
 from .iupac_utils import reverse_wc_complement
 from .complex_utils import strand_table_to_sequence
@@ -12,30 +13,45 @@ from .dsdparser import (parse_seesaw_string, parse_seesaw_file,
                         parse_pil_string, parse_pil_file)
 from .base_classes import DomainS, StrandS, ComplexS, MacrostateS, ReactionS
 
-Domain = DomainS
-Strand = StrandS
-Complex = ComplexS
-Macrostate = MacrostateS
-Reaction = ReactionS
+Domain = None
+Strand = None
+Complex = None
+Macrostate = None
+Reaction = None
 
-def set_prototypes(): # Replace all objects with prototypes
+def clear_io_objects():
     global Domain
     global Strand
     global Complex
-    global Reaction
     global Macrostate
+    global Reaction
 
-    Domain = DomainS
-    Strand = StrandS
-    Complex = ComplexS
-    Reaction = ReactionS
-    Macrostate = MacrostateS
+    Domain = None
+    Strand = None
+    Complex = None
+    Macrostate = None
+    Reaction = None
+    gc.collect()
+    return
+
+def set_io_objects(D = None, S = None, C = None, M = None, R = None):
+    global Domain
+    global Strand
+    global Complex
+    global Macrostate
+    global Reaction
+
+    Domain = DomainS if D is None else D
+    Strand = StrandS if S is None else S
+    Complex = ComplexS if C is None else C
+    Macrostate = MacrostateS if M is None else M
+    Reaction = ReactionS if R is None else R
+    gc.collect()
     return
 
 class PilFormatError(Exception):
     pass
 
-# ---- Load prototype objects ---- #
 def read_reaction(line):
     """ Interpret the parser output for a reaction line.
     """

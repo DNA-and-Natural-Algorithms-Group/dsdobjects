@@ -7,8 +7,9 @@ logger = logging.getLogger('dsdobjects')
 logger.setLevel(logging.INFO)
 import unittest
 
+import gc
 from dsdobjects import SingletonError, clear_singletons
-from dsdobjects.objectio import read_pil, read_pil_line, set_prototypes
+from dsdobjects.objectio import read_pil, read_pil_line, set_io_objects, clear_io_objects
 from dsdobjects.base_classes import DomainS, StrandS, ComplexS, MacrostateS, ReactionS
 
 SKIP = False
@@ -16,13 +17,10 @@ SKIP = False
 @unittest.skipIf(SKIP, "skipping tests.")
 class TestReadLine(unittest.TestCase):
     def setUp(self):
-        set_prototypes()
+        set_io_objects()
 
     def tearDown(self):
-        clear_singletons(DomainS)
-        clear_singletons(ComplexS)
-        clear_singletons(MacrostateS)
-        clear_singletons(ReactionS)
+        clear_io_objects()
 
     def test_read_pil_line_01(self):
         x = read_pil_line("length d5 = 15")
@@ -96,14 +94,10 @@ class TestReadLine(unittest.TestCase):
 @unittest.skipIf(SKIP, "skipping tests")
 class TestReadFile(unittest.TestCase):
     def setUp(self):
-        set_prototypes()
+        set_io_objects()
 
     def tearDown(self):
-        clear_singletons(DomainS)
-        clear_singletons(StrandS)
-        clear_singletons(ComplexS)
-        clear_singletons(MacrostateS)
-        clear_singletons(ReactionS)
+        clear_io_objects()
 
     def test_read_pil_01(self):
         out = read_pil(

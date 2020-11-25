@@ -338,6 +338,10 @@ class ComplexS(metaclass = Singleton):
         return (mod, val, out)
 
     def rotate(self, turns = None):
+        """ Returns every rotation of the sequence, structure pair for the complex.
+
+        It starts with the default representation.
+        """
         if turns is None:
             turns = self.size
         yield list(self.sequence), list(self.structure)
@@ -347,7 +351,7 @@ class ComplexS(metaclass = Singleton):
             yield x, y
 
     def rotate_pt(self, turns = None):
-        # Make test to show that we must not use internal strand_table and pair_table!
+        """ A wrapper for rotate() which returns strand table and pair table. """
         for (x, y) in self.rotate(turns):
             yield make_strand_table(x), make_pair_table(y)
     
@@ -544,6 +548,9 @@ class StrandS(ComplexS):
     @property
     def structure(self):
         return None
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.name}, {" ".join(map(str, self._sequence))})'
 
 class MacrostateS(metaclass = Singleton):
     """ A set of complexes (singleton). 

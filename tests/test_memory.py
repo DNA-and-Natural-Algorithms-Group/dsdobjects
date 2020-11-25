@@ -12,22 +12,26 @@ from dsdobjects import (SingletonError,
                         show_singletons,
                         clear_singletons,
                         DomainS)
-import dsdobjects.objectio as oio
+from dsdobjects.objectio import read_pil_line, set_io_objects, clear_io_objects
 
-SKIP = False
+SKIP = True # Below test imports matplotlib, that will ruin later tests.
 
 class MyDomain(DomainS):
     pass
 
-oio.Domain = MyDomain
-
 def initdomain1():
-    return oio.read_pil_line('length a = 15')
+    return read_pil_line('length a = 15')
     
 def initdomain2():
-    return oio.read_pil_line('length a = 10')
+    return read_pil_line('length a = 10')
 
 class TestMemoryLeaks(unittest.TestCase):
+    def setUp(self):
+        set_io_objects(D = MyDomain)
+
+    def tearDown(self):
+        clear_io_objects()
+
     def test_memory_ok(self):
         for s in show_singletons(MyDomain):
             print(s)
@@ -44,11 +48,16 @@ class TestMemoryLeaks(unittest.TestCase):
 @unittest.skipIf(SKIP, "skipping tests.")
 class TestMemoryLeaks2(unittest.TestCase):
     def setUp(self):
+        set_io_objects(D = MyDomain)
         self.SKIP = False
         try:
             import matplotlib.pyplot
         except ImportError:
             self.SKIP = True
+
+    def tearDown(self):
+        clear_io_objects()
+        clear_singletons(MyDomain)
 
     def test_memory_leak(self):
         if self.SKIP:
