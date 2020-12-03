@@ -1,7 +1,9 @@
 import logging
 log = logging.getLogger(__name__)
 
-from .singleton import Singleton, SingletonError
+from itertools import chain
+
+from .singleton import Singleton, SingletonError, show_singletons
 from .utils import flint, convert_units
 from .complex_utils import (SecondaryStructureError,
                             make_pair_table, 
@@ -15,6 +17,23 @@ from .complex_utils import (SecondaryStructureError,
 
 class ObjectInitError(Exception):
     pass
+
+def show_memory():
+    """ Shows all objects of base_classes.py that are in use.
+
+    This function is for debugging only! The memory of a Singleton clears
+    automatically if there is no hard reference to the object. However, one has
+    to make -- possibly unexpected, un-pythonic -- handstands to ensure that
+    hard references are cleaned up. For example when working with dictionaries
+    and sets, where the "del" is not enough, but you need to clear() all
+    entries, before you return the results of a function.
+    """
+    for x in chain(show_singletons(DomainS),
+                   show_singletons(StrandS),
+                   show_singletons(ComplexS),
+                   show_singletons(MacrostateS),
+                   show_singletons(ReactionS)):
+        yield x
 
 class DomainS(metaclass = Singleton):
     """ Domain object (Singleton).

@@ -40,7 +40,6 @@ def set_io_objects(D = None, S = None, C = None, M = None, R = None):
     global Complex
     global Macrostate
     global Reaction
-
     Domain = DomainS if D is None else D
     Strand = StrandS if S is None else S
     Complex = ComplexS if C is None else C
@@ -120,6 +119,7 @@ def read_pil(data, is_file = False, ignore = None):
             if obj.sequence is not None and comp.sequence is None:
                 comp.sequence = reverse_wc_complement(obj.sequence, material = 'DNA')
             out['domains'][comp.name] = comp
+            del comp # so important
         elif isinstance(obj, Strand):
             out['strands'][obj.name] = obj
         elif isinstance(obj, Complex):
@@ -133,6 +133,7 @@ def read_pil(data, is_file = False, ignore = None):
         else:
             assert isinstance(obj, list)
             out['other'].append(obj)
+        del obj # so important
     return out
 
 def read_pil_line(raw):

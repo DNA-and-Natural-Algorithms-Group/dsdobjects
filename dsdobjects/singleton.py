@@ -10,7 +10,13 @@ class SingletonError(Exception):
         self.existing = existing
 
 def clear_singletons(cls):
-    # Do not use this method, for other purposes than unittests.
+    """ Hard reset of singleton dictionary.
+
+    This metod is for debugging only, using this in production 
+    might cause unexpected behavior or segfaults... well, well.
+    """
+    cls._instanceNames.clear()
+    cls._instanceCanon.clear()
     cls._instanceNames = WeakValueDictionary() # [name] = canon
     cls._instanceCanon = WeakValueDictionary() # [canon] = obj
 
