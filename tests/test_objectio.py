@@ -177,6 +177,36 @@ class TestReadFile(unittest.TestCase):
         assert list(out['complexes']['B'].sequence) == [DomainS('a'), DomainS('x'), DomainS('b'), DomainS('y'), '+', DomainS('y*'), DomainS('b*'), DomainS('x*'), DomainS('b')]
         assert out['complexes']['B'].kernel_string == 'a x( b( y( + ) ) ) b'
 
+    def test_macrostate_name_bug(self):
+        out = read_pil("""
+            # Domains (8) 
+            length d2 = 15
+            length d3 = 15
+            length d4 = 15
+            length t1 = 5
+
+            # Resting complexes (32) 
+            A = t1 d2
+            f1 = d2( t1( + d4( + d3( t1( + d3( + ) ) ) ) ) ) t1* @constant 100 nM
+            f2 = t1 d4 d3 @constant 100 nM
+            f3 = d2( + t1( d3( + t1* ) ) ) @constant 100 nM
+
+            # ...
+            e36 = t1 d3
+            e499 = t1( d4 d3( + t1* ) ) d2*( + t1 )
+            e501 = t1 d4 d3( + t1* ) t1* d2*( + t1 )
+            e1027 = t1* d3*( t1*( d2*( + t1 ) + ) )
+            # ...
+            macrostate f2 = [f2]
+            macrostate e36 = [e36]
+            macrostate e499 = [e501, e499]
+            macrostate e1027 = [e1027]
+            # ...
+            reaction [condensed    = 6.57478e-05 /nM/s ] e499 + e36 -> e1027 + f2
+            # ...
+            """)
+        pass
+
 if __name__ == '__main__':
     unittest.main()
 

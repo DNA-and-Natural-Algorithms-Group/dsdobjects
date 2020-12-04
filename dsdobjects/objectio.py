@@ -220,7 +220,7 @@ def read_pil_line(raw):
             cplxs = [Complex(None, None, x) for x in line[2]]
         except KeyError as err:
             raise PilFormatError(f"Cannot find complex: {err}.")
-        return Macrostate(complexes = cplxs, name = cplxs[0].name)
+        return Macrostate(complexes = cplxs, name = name)
 
     elif line[0] == 'reaction' and Reaction is not None:
         reactants, products, rtype, rate, units, r = read_reaction(line)
