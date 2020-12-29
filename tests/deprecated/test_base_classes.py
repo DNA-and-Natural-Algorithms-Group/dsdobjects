@@ -6,34 +6,35 @@
 
 import unittest
 
-import dsdobjects.core as bc
+SKIP = True
 
-SKIP = False
+if not SKIP:
+    import dsdobjects.core as bc
 
-class DummyDomain(bc.DL_Domain):
-    # inherit and change the global variables ...
-    # btw. doing it like this can cause troubles, if you
-    # have multiple objects that get initialized like this,
-    # they will all modify the bc.DL_Domain... 
-    bc.DL_Domain.DTYPE_CUTOFF = 7
-    bc.DL_Domain.SHORT_DOM_LEN = 6
-    bc.DL_Domain.LONG_DOM_LEN = 15
-
-    bc.DL_Domain.MEMORY = dict()
-
-    def __init__(self, *kargs, **kwargs):
-        super(DummyDomain, self).__init__(*kargs, **kwargs)
-
-    @property
-    def complement(self):
-        # If we initialize the complement, we need to know the class.
-        if self._complement is None:
-            cname = self._name[:-1] if self.is_complement else self._name + '*'
-            if cname in bc.DL_Domain.MEMORY:
-                self._complement = bc.DL_Domain.MEMORY[cname]
-            else :
-                self._complement = DummyDomain(cname, self.dtype, self.length)
-        return self._complement
+    class DummyDomain(bc.DL_Domain):
+        # inherit and change the global variables ...
+        # btw. doing it like this can cause troubles, if you
+        # have multiple objects that get initialized like this,
+        # they will all modify the bc.DL_Domain... 
+        bc.DL_Domain.DTYPE_CUTOFF = 7
+        bc.DL_Domain.SHORT_DOM_LEN = 6
+        bc.DL_Domain.LONG_DOM_LEN = 15
+    
+        bc.DL_Domain.MEMORY = dict()
+    
+        def __init__(self, *kargs, **kwargs):
+            super(DummyDomain, self).__init__(*kargs, **kwargs)
+    
+        @property
+        def complement(self):
+            # If we initialize the complement, we need to know the class.
+            if self._complement is None:
+                cname = self._name[:-1] if self.is_complement else self._name + '*'
+                if cname in bc.DL_Domain.MEMORY:
+                    self._complement = bc.DL_Domain.MEMORY[cname]
+                else :
+                    self._complement = DummyDomain(cname, self.dtype, self.length)
+            return self._complement
 
 @unittest.skipIf(SKIP, "skipping tests")
 class Test_SequenceConstraint(unittest.TestCase):

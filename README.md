@@ -28,9 +28,9 @@ reference to the existing object. If only the name is given, the existing
 object is returned.
 
 This library is expected to evolve further, potentially breaking backward
-compatibility as new challenges are waiting in the [nuskell] compiler framework.
-Don't hesitate the authors with questions about future plans. Inheritance and
-extensions for all provided objects is fully supported and encouraged.
+compatibility as new challenges are waiting in the [nuskell] compiler
+framework.  Don't hesitate to contact the authors with questions about future
+plans. Inheritance from the provided objects is fully supported and encouraged.
 
 ## Installation
 To install this library use pip:
@@ -81,18 +81,22 @@ Initialize prototype objects by loading a system (or a single line) of \*.PIL
 file format:
 
 ```py
-import dsdobjects.objectio as oio
-oio.set_prototypes()
+from dsdobjects.base_classes import DomainS
+from dsdobjects.objectio import set_io_objects, clear_io_objects, read_pil, read_pil_line
+
+# Use the builtin singleton obects form the dsdobjects library.
+set_io_objects()
 
 # The following dictionary contains references to all objects.
-outdict = oio.read_pil(filename.pil)
+outdict = read_pil('filename', is_file = True)
 
-d5 = oio.read_pil_line("length d5 = 7")
+# The following let's you quickly initialize single objects.
+d5 = read_pil_line("length d5 = 7")
 assert isinstance(d5, DomainS)
 
-d6 = oio.read_pil_line("sequence d6 = NNNNN")
+d6 = read_pil_line("sequence d6 = NNNNN")
 assert isinstance(d6, DomainS)
-assert DomainS.sequence == 'NNNNN'
+assert d6.sequence == 'NNNNN'
 ```
 
 ## Version

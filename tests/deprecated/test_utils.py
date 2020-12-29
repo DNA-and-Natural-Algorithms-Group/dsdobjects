@@ -6,10 +6,12 @@
 #
 
 import unittest
-import dsdobjects.utils as utils
-from dsdobjects.complex_utils import SecondaryStructureError, strand_table_to_sequence
 
-SKIP = False
+SKIP = True
+
+if not SKIP:
+    import dsdobjects.utils as utils
+    from dsdobjects.complex_utils import SecondaryStructureError, strand_table_to_sequence
 
 @unittest.skipIf(SKIP, "skipping tests")
 class UtilityTests(unittest.TestCase):

@@ -8,9 +8,11 @@
 import unittest
 from pyparsing import ParseException
 
-from dsdobjects.parser import parse_pil_file, parse_pil_string
 
-SKIP = False
+SKIP = True
+
+if not SKIP:
+    from dsdobjects.parser import parse_pil_file, parse_pil_string
 
 @unittest.skipIf(SKIP, "skipping tests")
 class TestPILparser(unittest.TestCase):
