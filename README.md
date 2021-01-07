@@ -44,10 +44,8 @@ $ python ./setup.py install
 
 ### Quick Start
 ```py
-from dsdobjects import DomainS, ComplexS, MacrostateS, ReactionS
-```
+from dsdobjects import DomainS, ComplexS
 
-```py
 # Define a few toy domains:
 a = DomainS('a', length = 15)
 b = DomainS('b', length = 9)
@@ -59,21 +57,21 @@ c = DomainS('c', length = 6)
 assert (a is ~(~a))
 
 # Use the Domains to define a Complex ...
-foo = Complex([a, b, c, ~b, '+', ~a], list('((.)+)'), name = 'foo')
+foo = ComplexS([a, b, c, ~b, '+', ~a], list('((.)+)'), name = 'foo')
 
 # ... and test some of the built-in complex properties:
 foo.kernel_string
 foo.canonical_form
 foo.size
 foo.pair_table
-for r in foo.rotate():
-    print(r, r.kernel_string)
+for (se, ss) in foo.rotate():
+    print(se, ss)
 
 # If you initialize a disconnected complex ... 
-bar = Complex([a, b, c, ~b, '+', ~a], list('.(.)+.'), name = 'bar')
+bar = ComplexS([a, b, c, ~b, '+', ~a], list('.(.)+.'), name = 'bar')
 assert bar.is_connected is False
 # ... use split to get all indiviudal complexes:
-cx1, cx2 = cplx.split()
+cx1, cx2 = bar.split()
 ```
 
 ### Quick Start from PIL files
@@ -81,7 +79,7 @@ Initialize prototype objects by loading a system (or a single line) of \*.PIL
 file format:
 
 ```py
-from dsdobjects.base_classes import DomainS
+from dsdobjects import DomainS
 from dsdobjects.objectio import set_io_objects, clear_io_objects, read_pil, read_pil_line
 
 # Use the builtin singleton obects form the dsdobjects library.
